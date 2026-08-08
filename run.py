@@ -57,14 +57,21 @@ class Servidor:
 
 
 def ventana_control(servidor: Servidor) -> bool:
-    """Ventana mínima con Tkinter. Devuelve False si Tkinter no está disponible."""
+    """Ventana mínima con Tkinter.
+
+    Devuelve False si no se pudo abrir (Tkinter ausente, sin sesión de
+    escritorio, servidor X inaccesible…). En ese caso el llamador mantiene
+    vivo el proceso sin interfaz, para no derribar el servidor.
+    """
     try:
         import tkinter as tk
         from tkinter import messagebox
-    except ImportError:
+
+        raiz = tk.Tk()
+    except Exception as exc:  # ImportError, TclError, …
+        print(f"No se pudo abrir la ventana de control ({exc}).")
         return False
 
-    raiz = tk.Tk()
     raiz.title(f"{APP_NAME} {APP_VERSION}")
     raiz.geometry("430x250")
     raiz.resizable(False, False)
@@ -114,8 +121,10 @@ def main() -> int:
     webbrowser.open(servidor.url)
 
     if not ventana_control(servidor):
-        # Sin Tkinter: mantenemos el proceso vivo desde la consola.
-        print("Presiona Ctrl+C para cerrar ContaFlow.")
+        # Sin ventana: el servidor sigue en pie y se cierra con Ctrl+C
+        # (o cerrando la consola).
+        print(f"ContaFlow sigue activo en {servidor.url}.")
+        print("Presiona Ctrl+C para cerrarlo.")
         try:
             while True:
                 time.sleep(1)

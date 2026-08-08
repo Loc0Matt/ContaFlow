@@ -31,6 +31,7 @@ jobs:
     name: Construir ejecutable
     needs: pruebas
     runs-on: windows-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -53,16 +54,21 @@ jobs:
 
       - name: Verificar que el ejecutable arranca
         shell: pwsh
+        timeout-minutes: 5
         run: |
           if (-not (Test-Path dist/ContaFlow.exe)) {
-            throw "No se generó dist/ContaFlow.exe"
+            throw "No se genero dist/ContaFlow.exe"
           }
           $tamano = (Get-Item dist/ContaFlow.exe).Length / 1MB
           Write-Host ("Tamano del ejecutable: {0:N1} MB" -f $tamano)
 
-          # Arranca el .exe y comprueba que el servidor responde en /salud.
+          # Arranca el .exe y comprueba que el servidor responda en /salud.
+          # La salida se redirige a archivos: si el proceso hereda la tuberia
+          # del step, GitHub Actions se queda esperando aunque lo detengamos.
           $env:CONTAFLOW_DATA = "$env:RUNNER_TEMP\contaflow-smoke"
-          $proceso = Start-Process -FilePath dist/ContaFlow.exe -PassThru
+          Start-Process -FilePath dist/ContaFlow.exe `
+            -RedirectStandardOutput salida.log -RedirectStandardError error.log | Out-Null
+
           $ok = $false
           foreach ($i in 1..30) {
             Start-Sleep -Seconds 2
@@ -71,8 +77,17 @@ jobs:
               if ($r.estado -eq "ok") { $ok = $true; break }
             } catch { }
           }
-          Stop-Process -Id $proceso.Id -Force -ErrorAction SilentlyContinue
-          if (-not $ok) { throw "El ejecutable no respondio en /salud" }
+
+          # El bootloader onefile lanza un proceso hijo: hay que detener ambos,
+          # o el step queda colgado reteniendo la tuberia de salida.
+          Get-Process -Name ContaFlow -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 2
+
+          if (-not $ok) {
+            Write-Host "--- salida.log ---"; Get-Content salida.log -ErrorAction SilentlyContinue
+            Write-Host "--- error.log ---";  Get-Content error.log  -ErrorAction SilentlyContinue
+            throw "El ejecutable no respondio en /salud"
+          }
           Write-Host "El ejecutable arranca y responde correctamente."
 
       - name: Preparar paquete de distribución
