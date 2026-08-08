@@ -1,5 +1,7 @@
 # ContaFlow — Sistema Contable Chileno Multiempresa
 
+> Creado por **Loc0Matt** · 2026 · Código abierto bajo licencia [MIT](LICENSE)
+
 Sistema contable completo para llevar una cartera pequeña de clientes, construido según
 la normativa chilena. Funciona **100% offline** en tu computador Windows: no se conecta
 al SII ni a ningún servicio externo, y todos los datos viven en un solo archivo en tu disco.
@@ -217,3 +219,21 @@ contaflow/
   templates/         Vistas Jinja2
   static/            Hoja de estilos
 ```
+
+---
+
+## Autoría y licencia
+
+**ContaFlow** fue creado y desarrollado por **Loc0Matt** en 2026.
+
+Se publica bajo licencia **MIT**: puedes usarlo, modificarlo, redistribuirlo y
+también comercializarlo. La única condición es conservar el aviso de copyright
+del archivo [`LICENSE`](LICENSE). Los detalles están en [`AUTORES.md`](AUTORES.md).
+
+Para comprobar la autoría del sistema:
+
+```bash
+python -m contaflow.firma
+```
+
+o, con la aplicación en marcha, abre `http://127.0.0.1:8777/firma`.
