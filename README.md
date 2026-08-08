@@ -23,6 +23,9 @@ actualiza el repositorio.
 Colócalo donde quieras (Escritorio, `C:\ContaFlow\`, un pendrive) y ábrelo con doble clic.
 **No necesitas instalar Python ni nada más.**
 
+En el mismo ZIP viene **`Manual-ContaFlow.pdf`**: 48 páginas con índice clickeable que
+explican cada apartado del sistema y las 145 cuentas del plan contable, una por una.
+
 > Windows SmartScreen puede advertir porque el ejecutable no está firmado digitalmente.
 > Elige **Más información → Ejecutar de todas formas**. Ocurre con cualquier programa
 > sin certificado de firma comercial.
@@ -39,6 +42,19 @@ El script crea el entorno, instala dependencias, corre las pruebas y deja el eje
 en `dist\ContaFlow.exe`.
 
 ---
+
+## Documentación
+
+| Documento | Qué contiene |
+|---|---|
+| **[`docs/Manual-ContaFlow.pdf`](docs/Manual-ContaFlow.pdf)** | Manual completo de 48 páginas para un usuario nuevo: índice clickeable, marcadores en el lector, referencias cruzadas y un **diccionario con las 145 cuentas del plan** — qué registra cada una, cuándo se carga y cuándo se abona. |
+| [`docs/manual.md`](docs/manual.md) | La misma guía en texto plano, para leer en GitHub. |
+
+El PDF se regenera con:
+
+```bash
+python herramientas/generar_manual.py
+```
 
 ## Primer uso
 

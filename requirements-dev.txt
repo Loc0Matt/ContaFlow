@@ -1,0 +1,6 @@
+# Dependencias solo para desarrollo y pruebas.
+# La aplicación se ejecuta con requirements.txt.
+-r requirements.txt
+httpx>=0.27      # cliente de pruebas de FastAPI
+pypdf>=4.0       # verificación de los hipervínculos del manual
+pyinstaller>=6.0 # empaquetado del .exe
