@@ -123,5 +123,55 @@ class TestSinAtribucionAutomatica(unittest.TestCase):
         self.assertEqual(sospechosos, [], f"Atribución automática encontrada: {sospechosos}")
 
 
+
+class TestLogotipo(unittest.TestCase):
+    """El sistema debe funcionar con o sin logotipo propio."""
+
+    def test_siempre_hay_un_logo(self):
+        from contaflow.marca import ruta_logo, url_logo
+
+        self.assertIsNotNone(ruta_logo(), "Falta incluso el escudo de reserva.")
+        self.assertTrue(url_logo().startswith("/static/"))
+
+    def test_el_escudo_de_reserva_existe(self):
+        reserva = RAIZ / "contaflow" / "static" / "logo-generico.svg"
+        self.assertTrue(reserva.is_file())
+        self.assertIn("<svg", reserva.read_text(encoding="utf-8"))
+
+    def test_prioridad_del_logo_propio(self):
+        """Si el usuario deja su logo, manda sobre el escudo de reserva."""
+        import contaflow.marca as marca
+
+        propio = marca.DIR_STATIC / "logo.png"
+        creado = False
+        try:
+            if not propio.exists():
+                # PNG mínimo válido de 1x1 píxel.
+                propio.write_bytes(bytes.fromhex(
+                    "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4"
+                    "890000000a49444154789c63000100000500010d0a2db40000000049454e44ae426082"
+                ))
+                creado = True
+            marca.ruta_logo.cache_clear()
+            self.assertEqual(marca.ruta_logo().name, "logo.png")
+            self.assertTrue(marca.es_personalizado())
+            self.assertIsNotNone(marca.ruta_rasterizada())
+        finally:
+            if creado:
+                propio.unlink()
+            marca.ruta_logo.cache_clear()
+
+    def test_el_logo_llega_al_html(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ImportError:
+            self.skipTest("httpx no está instalado")
+
+        from contaflow.app import crear_app
+
+        html = TestClient(crear_app()).get("/login").text
+        self.assertIn('rel="icon"', html)
+        self.assertIn("/static/logo", html)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

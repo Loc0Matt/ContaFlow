@@ -58,6 +58,19 @@ El PDF se regenera con:
 python herramientas/generar_manual.py
 ```
 
+## Poner tu logotipo
+
+Deja tu imagen en **`contaflow/static/logo.png`** (también sirve `.jpg` o `.svg`).
+Con eso basta: la aplicación la usa automáticamente en la barra lateral, la pantalla
+de ingreso, el favicon, la portada del manual y el icono del `.exe`.
+
+Desde GitHub, sin instalar nada: entra a la carpeta `contaflow/static`, pulsa
+**Add file → Upload files**, arrastra tu imagen renombrada como `logo.png` y confirma.
+La siguiente compilación toma el logo sola.
+
+Recomendado: PNG cuadrado con fondo transparente, 512×512 px o más. Mientras no haya
+uno propio se usa el escudo de reserva `logo-generico.svg`.
+
 ## Primer uso
 
 1. Abre `ContaFlow.exe`. Se abrirá una ventanita de control y tu navegador en

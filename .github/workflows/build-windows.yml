@@ -49,6 +49,9 @@ jobs:
       - name: Ejecutar pruebas en Windows
         run: python -m unittest discover -s tests -v
 
+      - name: Generar el icono desde el logotipo
+        run: python herramientas/generar_icono.py
+
       - name: Generar el manual de usuario en PDF
         run: python herramientas/generar_manual.py
 

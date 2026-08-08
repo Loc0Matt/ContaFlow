@@ -55,7 +55,8 @@ if errorlevel 1 (
 )
 
 echo.
-echo [5/5] Empaquetando con PyInstaller (puede tardar varios minutos)...
+echo [5/5] Preparando el icono y empaquetando (puede tardar varios minutos)...
+call .venv\Scripts\python.exe herramientas\generar_icono.py
 call .venv\Scripts\pyinstaller.exe build\contaflow.spec --clean --noconfirm || goto :error
 
 if not exist dist\ContaFlow.exe goto :error

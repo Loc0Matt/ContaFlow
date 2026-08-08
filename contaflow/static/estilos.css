@@ -228,3 +228,15 @@ details.plegable > div { padding: 0 16px 16px; border-top: 1px solid var(--borde
   .sidebar { width: 100%; flex: none; height: auto; position: static; }
   .sidebar a { display: inline-block; border-left: none; border-bottom: 3px solid transparent; }
 }
+
+/* ------------------------------------------------------------- identidad */
+.marca { display: flex; align-items: center; gap: 10px; }
+.marca-logo {
+  width: 38px; height: 38px; flex: 0 0 38px;
+  object-fit: contain; border-radius: 7px; background: #fff; padding: 3px;
+}
+.marca-texto { display: block; min-width: 0; }
+.logo-ingreso {
+  display: block; margin: 0 auto 14px; max-width: 190px; max-height: 110px;
+  object-fit: contain;
+}

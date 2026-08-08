@@ -20,12 +20,13 @@ from reportlab.lib.pagesizes import A4  # noqa: E402
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet  # noqa: E402
 from reportlab.lib.units import mm  # noqa: E402
 from reportlab.platypus import (  # noqa: E402
-    BaseDocTemplate, CondPageBreak, Frame, KeepTogether, ListFlowable, ListItem, NextPageTemplate,
-    PageBreak, PageTemplate, Paragraph, Spacer, Table, TableStyle,
+    BaseDocTemplate, CondPageBreak, Frame, Image, KeepTogether, ListFlowable, ListItem,
+    NextPageTemplate, PageBreak, PageTemplate, Paragraph, Spacer, Table, TableStyle,
 )
 from reportlab.platypus.tableofcontents import TableOfContents  # noqa: E402
 
 from contaflow.firma import linea_credito, marca_agua, sello  # noqa: E402
+from contaflow.marca import ruta_rasterizada  # noqa: E402
 from contaflow.config import (  # noqa: E402
     APP_NAME, APP_VERSION, RETENCION_HONORARIOS, TABLA_IMPUESTO_UNICO_UTM, TASAS_AFC,
     TASA_SALUD_LEGAL, TASA_SIS_EMPLEADOR, TOPE_IMPONIBLE_AFC_UF, TOPE_IMPONIBLE_AFP_UF,
@@ -247,13 +248,30 @@ def cta(codigo: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+def logo_portada(ancho_mm: float = 52):
+    """Logotipo de la portada. Vacío si no hay imagen rasterizada disponible."""
+    ruta = ruta_rasterizada()
+    if ruta is None:
+        return []
+    try:
+        from PIL import Image as PILImage
+
+        with PILImage.open(ruta) as img:
+            proporcion = img.height / img.width
+    except Exception:
+        proporcion = 1.0
+    ancho = ancho_mm * mm
+    return [Image(str(ruta), width=ancho, height=ancho * proporcion), Spacer(1, 8 * mm)]
+
+
 def portada():
     return [
         Spacer(1, 32 * mm),
         Paragraph(f'<font color="white">{APP_NAME}</font>', EST["portada_titulo"]),
         Paragraph('<font color="#A8B8D8">Sistema Contable Chileno Multiempresa</font>',
                   EST["portada_sub"]),
-        Spacer(1, 42 * mm),
+        Spacer(1, 26 * mm),
+        *logo_portada(),
         Paragraph("Manual de usuario", ParagraphStyle(
             "mu", parent=EST["portada_titulo"], fontSize=26, textColor=AZUL)),
         Paragraph("Guía completa para empezar desde cero", EST["portada_sub"]),

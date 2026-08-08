@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from contaflow.config import APP_NAME, APP_TITULO, APP_VERSION, DIR_TEMPLATES
 from contaflow.firma import linea_credito, marca_agua
+from contaflow.marca import url_logo
 from contaflow.models import Empresa, Usuario
 from contaflow.services.utils import (
     formatear_rut, formato_decimal, formato_fecha, formato_moneda, nombre_mes, periodo_etiqueta,
@@ -25,7 +26,7 @@ templates.env.filters["fecha"] = formato_fecha
 templates.env.globals.update(
     APP_NAME=APP_NAME, APP_TITULO=APP_TITULO, APP_VERSION=APP_VERSION,
     nombre_mes=nombre_mes, periodo_etiqueta=periodo_etiqueta, hoy=date.today,
-    FIRMA=marca_agua(), FIRMA_CREDITO=linea_credito(),
+    FIRMA=marca_agua(), FIRMA_CREDITO=linea_credito(), LOGO=url_logo(),
     MESES=[(i, nombre_mes(i)) for i in range(1, 13)],
 )
 

@@ -9,9 +9,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ingresar · {{ APP_NAME }}</title>
   <link rel="stylesheet" href="/static/estilos.css">
+  <link rel="icon" href="{{ LOGO }}">
 </head>
 <body style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(140deg,#1f3864,#2f5597)">
   <div class="panel" style="width:370px;margin:0">
+    {% if LOGO %}<img src="{{ LOGO }}" alt="{{ APP_NAME }}" class="logo-ingreso">{% endif %}
     <h1 style="margin-bottom:2px">{{ APP_NAME }}</h1>
     <p class="subtitulo">Sistema contable chileno multiempresa</p>
     {% if error %}<div class="aviso error">{{ error }}</div>{% endif %}
