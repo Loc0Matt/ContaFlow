@@ -8,3 +8,8 @@ itsdangerous>=2.1
 openpyxl>=3.1
 reportlab>=4.0
 pillow>=10.0
+
+# Ventana de escritorio nativa. En Windows incrusta WebView2 (el motor de
+# Edge, ya incluido en Windows 10/11). Si falta, la aplicación abre el
+# navegador en modo aplicación como alternativa.
+pywebview>=5.0; sys_platform == "win32"

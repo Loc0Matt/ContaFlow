@@ -116,3 +116,48 @@ class TestInformeDeError(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestVentanaDeControl(unittest.TestCase):
+    """Tk sólo acepta tamaños de fuente enteros.
+
+    Un valor como 7.5 funciona en algunos sistemas y en Windows revienta con
+    «expected integer but got "7.5"», tumbando la ventana de control. Aquí no
+    hay tkinter instalado, así que la comprobación se hace sobre el código.
+    """
+
+    def test_los_tamanos_de_fuente_son_enteros(self):
+        import re
+
+        fuente = (RAIZ / "run.py").read_text(encoding="utf-8")
+        decimales = re.findall(r'font=\([^)]*?,\s*(\d+\.\d+)', fuente)
+        self.assertEqual(
+            decimales, [],
+            f"Tk exige enteros en el tamaño de fuente; encontrados: {decimales}",
+        )
+
+    def test_hay_cadena_de_alternativas(self):
+        """Si un modo de ventana falla, debe existir el siguiente."""
+        for nombre in ("ventana_nativa", "abrir_modo_aplicacion",
+                       "ventana_control", "esperar_en_consola"):
+            self.assertTrue(callable(getattr(run, nombre, None)), f"Falta {nombre}()")
+
+    def test_la_ventana_nativa_avisa_si_no_puede_abrirse(self):
+        """Sin pywebview (o sin motor) debe devolver False, nunca reventar."""
+        with mock.patch.dict(sys.modules, {"webview": None}):
+            self.assertFalse(run.ventana_nativa(mock.Mock(url="http://127.0.0.1:8777")))
+
+    def test_modo_aplicacion_sin_navegadores(self):
+        with mock.patch("shutil.which", return_value=None):
+            with mock.patch.object(run, "NAVEGADORES", ()):
+                self.assertFalse(run.abrir_modo_aplicacion("http://127.0.0.1:8777"))
+
+    def test_modo_aplicacion_lanza_el_navegador(self):
+        import subprocess
+
+        with mock.patch("shutil.which", side_effect=lambda n: "/usr/bin/msedge"):
+            with mock.patch("pathlib.Path.exists", return_value=True):
+                with mock.patch.object(subprocess, "Popen") as lanzar:
+                    self.assertTrue(run.abrir_modo_aplicacion("http://x"))
+        orden = lanzar.call_args[0][0]
+        self.assertIn("--app=http://x", orden, "Debe abrirse en modo aplicación.")

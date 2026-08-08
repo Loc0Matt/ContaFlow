@@ -34,6 +34,14 @@ ocultos = [
 ]
 ocultos += collect_submodules("contaflow")
 
+# pywebview elige su backend en tiempo de ejecución, así que PyInstaller no ve
+# esos módulos. En Windows usa winforms sobre WebView2 (necesita pythonnet).
+for paquete in ("webview", "clr_loader", "pythonnet"):
+    try:
+        ocultos += collect_submodules(paquete)
+    except Exception:
+        pass  # no instalado en esta plataforma: la app cae al navegador
+
 analisis = Analysis(
     [str(RAIZ / "run.py")],
     pathex=[str(RAIZ)],

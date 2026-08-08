@@ -73,8 +73,8 @@ uno propio se usa el escudo de reserva `logo-generico.svg`.
 
 ## Primer uso
 
-1. Abre `ContaFlow.exe`. Se abrirá una ventanita de control y tu navegador en
-   `http://127.0.0.1:8777`.
+1. Abre `ContaFlow.exe`. Se abre **en su propia ventana de escritorio**, sin
+   navegador a la vista.
 2. Ingresa con **usuario `admin`, contraseña `admin`**.
 3. Cámbiala en *Configuración → Respaldos*.
 4. Crea tu primera empresa en *Empresas → Nueva empresa*. Al guardar se genera
@@ -82,8 +82,20 @@ uno propio se usa el escudo de reserva `logo-generico.svg`.
 5. Carga la **UF, UTM e ingreso mínimo** del año en *Maestros → Indicadores*
    (sólo necesario si vas a emitir liquidaciones de sueldo).
 
-Deja la ventanita de control abierta mientras trabajas: es el servidor. Al cerrarla,
-el sistema se apaga.
+Para cerrar el sistema, cierra la ventana.
+
+### Cómo funciona por dentro
+
+ContaFlow es una aplicación de escritorio, pero su interfaz está hecha con tecnología
+web y la dibuja un pequeño servidor que corre **dentro de tu propio computador**. Por eso
+existe la dirección `http://127.0.0.1:8777`: es el programa hablando consigo mismo, no
+internet. Nadie más puede acceder.
+
+La ventana usa **WebView2**, el motor que Windows 10 y 11 ya traen instalado. Si en tu
+equipo faltara, el sistema abre el navegador en «modo aplicación» (una ventana limpia,
+sin barra de direcciones ni pestañas) y, como último recurso, el navegador normal con
+una ventanita para cerrar el servidor. En cualquiera de los tres casos el programa
+funciona igual.
 
 ### Dónde quedan tus datos
 

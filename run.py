@@ -1,6 +1,14 @@
 """Punto de entrada de ContaFlow para escritorio.
 
-Levanta el servidor local, abre el navegador y muestra una ventana de control.
+Levanta el servidor local y abre la interfaz. Intenta, en este orden:
+
+1. una ventana de escritorio propia (pywebview sobre WebView2);
+2. el navegador en modo aplicación, sin barra de direcciones ni pestañas;
+3. el navegador normal, con una ventanita de control para cerrar el servidor.
+
+La variable de entorno CONTAFLOW_SIN_VENTANA=1 se salta los tres pasos y deja
+sólo el servidor, que es lo que necesitan las pruebas automáticas.
+
 Es el archivo que PyInstaller convierte en ContaFlow.exe.
 """
 from __future__ import annotations
@@ -16,6 +24,9 @@ import webbrowser
 import uvicorn
 
 from contaflow.config import APP_NAME, APP_VERSION, DIR_DATOS, HOST, PUERTO
+
+#: Con 1, no se abre ninguna ventana: sólo queda el servidor escuchando.
+SIN_VENTANA = os.environ.get("CONTAFLOW_SIN_VENTANA") == "1"
 
 #: Archivo donde queda el registro cuando la aplicación corre sin consola.
 RUTA_REGISTRO = DIR_DATOS / "contaflow.log"
@@ -90,6 +101,67 @@ class Servidor:
         self._hilo.join(timeout=5)
 
 
+def ventana_nativa(servidor: Servidor) -> bool:
+    """Abre ContaFlow en su propia ventana de escritorio, sin navegador.
+
+    Usa pywebview, que en Windows incrusta el motor WebView2 (el mismo de
+    Edge, preinstalado en Windows 10 y 11). La ventana no tiene barra de
+    direcciones ni pestañas: se ve y se comporta como cualquier programa.
+
+    Bloquea hasta que el usuario cierra la ventana. Devuelve False si no se
+    pudo abrir, para que el llamador recurra al navegador.
+    """
+    try:
+        import webview
+    except Exception as exc:  # falta la librería o el motor del sistema
+        print(f"Ventana nativa no disponible ({exc}).")
+        return False
+
+    try:
+        webview.create_window(
+            f"{APP_NAME} {APP_VERSION}",
+            servidor.url,
+            width=1360, height=860, min_size=(1024, 640),
+            confirm_close=True,
+        )
+        webview.start()  # bloquea hasta que se cierra la ventana
+        return True
+    except Exception as exc:
+        print(f"No se pudo abrir la ventana nativa ({exc}).")
+        return False
+
+
+#: Ubicaciones habituales de Edge y Chrome en Windows.
+NAVEGADORES = (
+    r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+    r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+    r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+    r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+)
+
+
+def abrir_modo_aplicacion(url: str) -> bool:
+    """Abre el navegador en «modo aplicación»: ventana limpia, sin barra ni pestañas.
+
+    Es el plan B cuando no hay ventana nativa disponible. Visualmente queda
+    casi igual; por dentro sigue siendo el navegador.
+    """
+    import shutil
+    import subprocess
+    from pathlib import Path
+
+    candidatos = [shutil.which("msedge"), shutil.which("chrome"), *NAVEGADORES]
+    for ruta in candidatos:
+        if not ruta or not Path(ruta).exists():
+            continue
+        try:
+            subprocess.Popen([ruta, f"--app={url}"], close_fds=True)
+            return True
+        except OSError:
+            continue
+    return False
+
+
 def ventana_control(servidor: Servidor) -> bool:
     """Ventana mínima con Tkinter.
 
@@ -115,9 +187,11 @@ def ventana_control(servidor: Servidor) -> bool:
              fg="white", bg="#1f3864").pack(pady=(24, 0))
     tk.Label(raiz, text="Sistema contable chileno multiempresa",
              font=("Segoe UI", 9), fg="#a8b8d8", bg="#1f3864").pack()
+    tk.Label(raiz, text="ContaFlow se abrió en una ventana aparte.",
+             font=("Segoe UI", 8), fg="#a8b8d8", bg="#1f3864").pack(pady=(8, 0))
     tk.Label(raiz, text=f"Servidor activo en {servidor.url}",
              font=("Segoe UI", 9), fg="#7fd6c4", bg="#1f3864").pack(pady=(14, 0))
-    tk.Label(raiz, text=f"Datos: {DIR_DATOS}", font=("Segoe UI", 7.5),
+    tk.Label(raiz, text=f"Datos: {DIR_DATOS}", font=("Segoe UI", 8),
              fg="#8fa2c4", bg="#1f3864", wraplength=390).pack(pady=(2, 0))
 
     marco = tk.Frame(raiz, bg="#1f3864")
@@ -134,8 +208,8 @@ def ventana_control(servidor: Servidor) -> bool:
     tk.Button(marco, text="Salir", font=("Segoe UI", 10), bg="#33507f",
               fg="white", relief="flat", padx=18, pady=7, command=salir).pack(side="left", padx=6)
 
-    tk.Label(raiz, text="Cierra esta ventana sólo cuando termines de trabajar.",
-             font=("Segoe UI", 7.5), fg="#8fa2c4", bg="#1f3864").pack(side="bottom", pady=8)
+    tk.Label(raiz, text="No cierres esta ventana mientras trabajas.",
+             font=("Segoe UI", 8), fg="#8fa2c4", bg="#1f3864").pack(side="bottom", pady=8)
 
     raiz.protocol("WM_DELETE_WINDOW", salir)
     raiz.mainloop()
@@ -172,6 +246,17 @@ def informar_error(exc: BaseException) -> None:
         print(mensaje, file=sys.stderr)
 
 
+def esperar_en_consola(servidor: Servidor) -> None:
+    """Último recurso: mantiene vivo el servidor sin ninguna ventana."""
+    print(f"{APP_NAME} sigue activo en {servidor.url}.")
+    print("Presiona Ctrl+C para cerrarlo.")
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        pass
+
+
 def main() -> int:
     puerto = buscar_puerto(HOST, PUERTO)
     servidor = Servidor(HOST, puerto)
@@ -180,21 +265,28 @@ def main() -> int:
     print(f"Datos en: {DIR_DATOS}")
     print("Iniciando servidor local...")
     servidor.iniciar()
-    print(f"Listo. Abre {servidor.url} en tu navegador.")
+    print(f"Servidor interno en {servidor.url}")
 
-    webbrowser.open(servidor.url)
+    try:
+        if SIN_VENTANA:
+            esperar_en_consola(servidor)
+            return 0
 
-    if not ventana_control(servidor):
-        # Sin ventana: el servidor sigue en pie y se cierra con Ctrl+C
-        # (o cerrando la consola).
-        print(f"ContaFlow sigue activo en {servidor.url}.")
-        print("Presiona Ctrl+C para cerrarlo.")
-        try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            servidor.detener()
-    return 0
+        # 1) Ventana de escritorio propia. Es el modo normal: ni navegador
+        #    ni barra de direcciones a la vista.
+        if ventana_nativa(servidor):
+            return 0
+
+        # 2) Sin ventana nativa, el navegador en modo aplicación se le parece
+        #    bastante. La ventanita de control queda para poder cerrar todo.
+        if not abrir_modo_aplicacion(servidor.url):
+            webbrowser.open(servidor.url)
+
+        if not ventana_control(servidor):
+            esperar_en_consola(servidor)
+        return 0
+    finally:
+        servidor.detener()
 
 
 if __name__ == "__main__":

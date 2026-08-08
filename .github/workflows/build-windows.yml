@@ -74,6 +74,9 @@ jobs:
           # flujos reales y ocultaria justamente los fallos de ese escenario.
           $datos = "$env:RUNNER_TEMP\contaflow-smoke"
           $env:CONTAFLOW_DATA = $datos
+          # Sin ventanas: el runner no debe quedarse con una abierta bloqueando
+          # el paso. Los modos de ventana se cubren en tests/test_arranque.py.
+          $env:CONTAFLOW_SIN_VENTANA = "1"
           Start-Process -FilePath dist/ContaFlow.exe | Out-Null
 
           $ok = $false
