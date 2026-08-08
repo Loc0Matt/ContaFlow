@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block titulo %}Estado de Resultados{% endblock %}
+{% block contenido %}
+<h1>Estado de Resultados</h1>
+<p class="subtitulo">{{ subtitulo }} · {{ empresa.razon_social }}</p>
+
+<form class="filtros no-imprimir" method="get">
+  <div class="campo"><label>Desde</label>
+    <select name="desde_mes">{% for n, nm in MESES %}<option value="{{ n }}" {% if n == desde_mes %}selected{% endif %}>{{ nm }}</option>{% endfor %}</select></div>
+  <div class="campo"><label>Hasta</label>
+    <select name="hasta_mes">{% for n, nm in MESES %}<option value="{{ n }}" {% if n == hasta_mes %}selected{% endif %}>{{ nm }}</option>{% endfor %}</select></div>
+  <button class="btn">Ver</button>
+  <a class="btn sec" href="/informes/resultados?desde_mes={{ desde_mes }}&hasta_mes={{ hasta_mes }}&formato=pdf">PDF</a>
+  <a class="btn sec" href="/informes/resultados?desde_mes={{ desde_mes }}&hasta_mes={{ hasta_mes }}&formato=xlsx">Excel</a>
+  <a class="btn sec" href="javascript:print()">Imprimir</a>
+</form>
+
+<div class="panel">
+  <table>
+    <tbody>
+      {% macro bloque(titulo, detalle, total, restar=false) %}
+        <tr class="grupo"><td colspan="2">{{ titulo }}</td></tr>
+        {% for codigo, nombre, monto in detalle %}
+          <tr><td style="padding-left:24px" class="mono">{{ codigo }} · {{ nombre }}</td>
+              <td class="num">{{ ('(' ~ (monto | moneda) ~ ')') if restar else (monto | moneda) }}</td></tr>
+        {% endfor %}
+        <tr class="total"><td>Total {{ titulo | lower }}</td>
+            <td class="num">{{ ('(' ~ (total | moneda) ~ ')') if restar else (total | moneda) }}</td></tr>
+      {% endmacro %}
+
+      {{ bloque('Ingresos de explotación', eerr.ingresos, eerr.total_ingresos) }}
+      {{ bloque('Costos de explotación', eerr.costos, eerr.total_costos, true) }}
+      <tr class="total" style="background:#eef2f8"><td><strong>MARGEN BRUTO</strong></td>
+          <td class="num"><strong>{{ eerr.margen_bruto | moneda }}</strong></td></tr>
+
+      {{ bloque('Gastos de administración y ventas', eerr.gastos_admin, eerr.total_gastos_admin, true) }}
+      <tr class="total" style="background:#eef2f8"><td><strong>RESULTADO OPERACIONAL</strong></td>
+          <td class="num"><strong>{{ eerr.resultado_operacional | moneda }}</strong></td></tr>
+
+      {{ bloque('Otros ingresos', eerr.otros_ingresos, eerr.total_otros_ingresos) }}
+      {{ bloque('Gastos fuera de explotación', eerr.no_operacionales, eerr.total_no_operacionales, true) }}
+      <tr class="total" style="background:#eef2f8"><td><strong>RESULTADO ANTES DE IMPUESTO</strong></td>
+          <td class="num"><strong>{{ eerr.antes_impuesto | moneda }}</strong></td></tr>
+
+      {{ bloque('Impuesto a la renta', eerr.impuesto, eerr.total_impuesto, true) }}
+    </tbody>
+    <tfoot>
+      <tr><td>{{ 'UTILIDAD DEL EJERCICIO' if eerr.resultado_neto >= 0 else 'PÉRDIDA DEL EJERCICIO' }}</td>
+          <td class="num {{ 'pos' if eerr.resultado_neto >= 0 else 'neg' }}">{{ eerr.resultado_neto | moneda }}</td></tr>
+    </tfoot>
+  </table>
+</div>
+{% endblock %}

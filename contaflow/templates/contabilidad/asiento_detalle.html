@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block titulo %}Comprobante {{ registro.folio }}{% endblock %}
+{% block contenido %}
+<h1>Comprobante {{ registro.folio }}</h1>
+<p class="subtitulo">
+  {{ registro.fecha | fecha }} · {{ registro.tipo.value | capitalize }} ·
+  Origen {{ registro.origen.value | capitalize }} ·
+  <span class="etiqueta-estado {{ 'e-ok' if registro.estado.value == 'CONTABILIZADO' else ('e-error' if registro.estado.value == 'ANULADO' else 'e-warn') }}">{{ registro.estado.value | capitalize }}</span>
+</p>
+
+<div class="panel">
+  <p><strong>{{ registro.glosa }}</strong></p>
+  <div class="tabla-scroll">
+    <table>
+      <thead><tr><th>#</th><th>Cuenta</th><th>Glosa</th><th>Auxiliar</th><th>Documento</th><th class="num">Debe</th><th class="num">Haber</th></tr></thead>
+      <tbody>
+        {% for m in registro.lineas %}
+          <tr>
+            <td>{{ m.orden }}</td>
+            <td class="mono">{{ m.cuenta.codigo }}<div class="ayuda">{{ m.cuenta.nombre }}</div></td>
+            <td>{{ m.glosa or '' }}</td>
+            <td>{{ m.entidad.razon_social if m.entidad else '—' }}</td>
+            <td>{{ m.documento_folio or '—' }}</td>
+            <td class="num">{{ m.debe | moneda if m.debe else '' }}</td>
+            <td class="num">{{ m.haber | moneda if m.haber else '' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot><tr><td colspan="5">Totales</td>
+        <td class="num">{{ registro.total_debe | moneda }}</td>
+        <td class="num">{{ registro.total_haber | moneda }}</td></tr></tfoot>
+    </table>
+  </div>
+  {% if registro.observacion %}<p class="ayuda" style="white-space:pre-wrap;margin-top:12px">{{ registro.observacion }}</p>{% endif %}
+</div>
+
+{% if registro.estado.value != 'ANULADO' %}
+<div class="panel no-imprimir">
+  <h3>Anular comprobante</h3>
+  <form method="post" action="/contabilidad/comprobantes/{{ registro.id }}/anular" onsubmit="return confirm('¿Anular el comprobante {{ registro.folio }}? Dejará de considerarse en los libros.')">
+    <div class="campo"><label>Motivo</label><input name="motivo" placeholder="Motivo de la anulación"></div>
+    <button class="btn peligro">Anular</button>
+    <a class="btn sec" href="/contabilidad/comprobantes">Volver</a>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

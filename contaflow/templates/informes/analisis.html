@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block titulo %}Análisis de cuentas{% endblock %}
+{% block contenido %}
+<h1>Análisis de cuentas con auxiliar</h1>
+<p class="subtitulo">Saldos pendientes por cliente o proveedor al cierre de {{ periodo_etiqueta(anio_activo, mes_activo) }}</p>
+
+<form class="filtros" method="get">
+  <div class="campo" style="min-width:340px"><label>Cuenta</label>
+    <select name="cuenta_id" onchange="this.form.submit()">
+      {% for c in cuentas %}<option value="{{ c.id }}" {% if cuenta and c.id == cuenta.id %}selected{% endif %}>{{ c.codigo }} · {{ c.nombre }}</option>{% endfor %}
+    </select></div>
+  {% if cuenta %}
+    <a class="btn sec" href="/informes/analisis?cuenta_id={{ cuenta.id }}&formato=pdf">PDF</a>
+    <a class="btn sec" href="/informes/analisis?cuenta_id={{ cuenta.id }}&formato=xlsx">Excel</a>
+  {% endif %}
+</form>
+
+{% if not cuentas %}
+  <div class="panel"><div class="vacio"><strong>No hay cuentas con auxiliar</strong>
+    Marca «Exige cliente/proveedor» en las cuentas del plan que quieras analizar.</div></div>
+{% else %}
+<div class="panel tabla-scroll">
+  <table>
+    <thead><tr><th>RUT</th><th>Razón social</th><th class="num">Debe</th><th class="num">Haber</th><th class="num">Saldo</th></tr></thead>
+    <tbody>
+      {% for rut, nombre, debe, haber, saldo in filas %}
+        <tr><td class="mono">{{ rut | rut }}</td><td>{{ nombre }}</td>
+            <td class="num">{{ debe | moneda }}</td><td class="num">{{ haber | moneda }}</td>
+            <td class="num {{ 'neg' if saldo < 0 }}"><strong>{{ saldo | moneda }}</strong></td></tr>
+      {% else %}
+        <tr><td colspan="5"><div class="vacio">Sin saldos pendientes en esta cuenta.</div></td></tr>
+      {% endfor %}
+    </tbody>
+    {% if filas %}<tfoot><tr><td colspan="4">Saldo total</td><td class="num">{{ total | moneda }}</td></tr></tfoot>{% endif %}
+  </table>
+</div>
+{% endif %}
+{% endblock %}

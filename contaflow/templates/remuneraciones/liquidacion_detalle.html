@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block titulo %}Liquidación{% endblock %}
+{% block contenido %}
+<h1>Liquidación de {{ liq.trabajador.nombre_completo }}</h1>
+<p class="subtitulo">{{ liq.trabajador.rut | rut }} · {{ periodo_etiqueta(liq.anio, liq.mes) }} · {{ liq.dias_trabajados }} días trabajados</p>
+
+<div class="acciones no-imprimir">
+  <a class="btn sec" href="/remuneraciones/liquidaciones/{{ liq.id }}?formato=pdf">Descargar PDF</a>
+  <a class="btn sec" href="/remuneraciones/liquidaciones">Volver</a>
+</div>
+
+<div class="rejilla c2">
+  <div class="panel">
+    <h3>Haberes</h3>
+    <table>
+      <tbody>
+        <tr class="grupo"><td colspan="2">Imponibles</td></tr>
+        <tr><td>Sueldo base</td><td class="num">{{ liq.sueldo_base | moneda }}</td></tr>
+        <tr><td>Gratificación legal</td><td class="num">{{ liq.gratificacion | moneda }}</td></tr>
+        <tr><td>Horas extraordinarias</td><td class="num">{{ liq.horas_extra | moneda }}</td></tr>
+        <tr><td>Bonos</td><td class="num">{{ liq.bonos | moneda }}</td></tr>
+        <tr><td>Comisiones</td><td class="num">{{ liq.comisiones | moneda }}</td></tr>
+        <tr class="total"><td>Total imponible</td><td class="num">{{ liq.total_imponible | moneda }}</td></tr>
+        <tr class="grupo"><td colspan="2">No imponibles</td></tr>
+        <tr><td>Colación</td><td class="num">{{ liq.colacion | moneda }}</td></tr>
+        <tr><td>Movilización</td><td class="num">{{ liq.movilizacion | moneda }}</td></tr>
+        <tr><td>Asignación familiar</td><td class="num">{{ liq.asignacion_familiar | moneda }}</td></tr>
+        <tr><td>Otros</td><td class="num">{{ liq.otros_no_imponibles | moneda }}</td></tr>
+        <tr class="total"><td>Total no imponible</td><td class="num">{{ liq.total_no_imponible | moneda }}</td></tr>
+      </tbody>
+      <tfoot><tr><td>TOTAL HABERES</td><td class="num">{{ liq.total_haberes | moneda }}</td></tr></tfoot>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h3>Descuentos</h3>
+    <table>
+      <tbody>
+        <tr><td>AFP ({{ liq.afp_tasa }}%)</td><td class="num">{{ liq.afp_monto | moneda }}</td></tr>
+        <tr><td>Salud legal 7%</td><td class="num">{{ liq.salud_monto | moneda }}</td></tr>
+        <tr><td>Salud adicional Isapre</td><td class="num">{{ liq.salud_adicional | moneda }}</td></tr>
+        <tr><td>Seguro de cesantía</td><td class="num">{{ liq.afc_monto | moneda }}</td></tr>
+        <tr class="total"><td>Base tributable</td><td class="num">{{ liq.base_tributable | moneda }}</td></tr>
+        <tr><td>Impuesto único 2ª categoría</td><td class="num">{{ liq.impuesto_unico | moneda }}</td></tr>
+        <tr><td>Anticipos</td><td class="num">{{ liq.anticipos | moneda }}</td></tr>
+        <tr><td>Otros descuentos</td><td class="num">{{ liq.otros_descuentos | moneda }}</td></tr>
+      </tbody>
+      <tfoot>
+        <tr><td>TOTAL DESCUENTOS</td><td class="num">{{ liq.total_descuentos | moneda }}</td></tr>
+        <tr><td>LÍQUIDO A PAGAR</td><td class="num">{{ liq.liquido | moneda }}</td></tr>
+      </tfoot>
+    </table>
+
+    <h3>Aportes del empleador</h3>
+    <table>
+      <tbody>
+        <tr><td>SIS (seguro de invalidez y sobrevivencia)</td><td class="num">{{ liq.sis_empleador | moneda }}</td></tr>
+        <tr><td>Seguro de cesantía empleador</td><td class="num">{{ liq.afc_empleador | moneda }}</td></tr>
+        <tr><td>Mutual de seguridad</td><td class="num">{{ liq.mutual | moneda }}</td></tr>
+      </tbody>
+      <tfoot><tr><td>COSTO TOTAL EMPRESA</td><td class="num">{{ liq.costo_empresa | moneda }}</td></tr></tfoot>
+    </table>
+  </div>
+</div>
+{% endblock %}

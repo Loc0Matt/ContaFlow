@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block titulo %}Situación Financiera{% endblock %}
+{% block contenido %}
+<h1>Estado de Situación Financiera</h1>
+<p class="subtitulo">{{ subtitulo }} · {{ empresa.razon_social }}</p>
+
+<form class="filtros no-imprimir" method="get">
+  <div class="campo"><label>Al cierre de</label>
+    <select name="hasta_mes" onchange="this.form.submit()">
+      {% for n, nm in MESES %}<option value="{{ n }}" {% if n == hasta_mes %}selected{% endif %}>{{ nm }}</option>{% endfor %}</select></div>
+  <a class="btn sec" href="/informes/balance-general?hasta_mes={{ hasta_mes }}&formato=pdf">PDF</a>
+  <a class="btn sec" href="/informes/balance-general?hasta_mes={{ hasta_mes }}&formato=xlsx">Excel</a>
+  <a class="btn sec" href="javascript:print()">Imprimir</a>
+</form>
+
+{% if bg.descuadre | round(0) != 0 %}
+  <div class="aviso warn">El balance presenta un descuadre de {{ bg.descuadre | moneda }}. Revisa los asientos del período.</div>
+{% endif %}
+
+{% macro grupo(g) %}
+  <tr class="grupo"><td colspan="2">{{ g.titulo }}</td></tr>
+  {% for codigo, nombre, monto in g.filas %}
+    <tr><td style="padding-left:22px" class="mono">{{ codigo }} · {{ nombre }}</td><td class="num">{{ monto | moneda }}</td></tr>
+  {% endfor %}
+  <tr class="total"><td>Total {{ g.titulo | lower }}</td><td class="num">{{ g.total | moneda }}</td></tr>
+{% endmacro %}
+
+<div class="rejilla c2">
+  <div class="panel">
+    <h3>Activos</h3>
+    <table>
+      <tbody>{{ grupo(bg.activo_corriente) }}{{ grupo(bg.activo_no_corriente) }}</tbody>
+      <tfoot><tr><td>TOTAL ACTIVOS</td><td class="num">{{ bg.total_activo | moneda }}</td></tr></tfoot>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h3>Pasivos y Patrimonio</h3>
+    <table>
+      <tbody>{{ grupo(bg.pasivo_corriente) }}{{ grupo(bg.pasivo_no_corriente) }}{{ grupo(bg.patrimonio) }}</tbody>
+      <tfoot><tr><td>TOTAL PASIVOS Y PATRIMONIO</td><td class="num">{{ bg.total_pasivo_patrimonio | moneda }}</td></tr></tfoot>
+    </table>
+  </div>
+</div>
+{% endblock %}

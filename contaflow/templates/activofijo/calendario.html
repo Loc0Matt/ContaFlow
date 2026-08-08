@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block titulo %}Tabla de depreciación{% endblock %}
+{% block contenido %}
+<h1>Tabla de depreciación · {{ activo.codigo }}</h1>
+<p class="subtitulo">
+  {{ activo.nombre }} · adquirido el {{ activo.fecha_adquisicion | fecha }} ·
+  costo {{ activo.valor_adquisicion | moneda }} ·
+  vida útil {{ activo.vida_util_efectiva }} meses{% if activo.usa_acelerada %} (acelerada){% endif %}
+</p>
+
+<div class="rejilla c3">
+  <div class="kpi"><div class="etiqueta">Base depreciable</div><div class="valor">{{ activo.depreciable | moneda }}</div>
+    <div class="detalle">Costo menos valor residual</div></div>
+  <div class="kpi"><div class="etiqueta">Cuota mensual</div><div class="valor">{{ activo.cuota_mensual | moneda }}</div></div>
+  <div class="kpi"><div class="etiqueta">Cuotas</div><div class="valor">{{ filas | length }}</div>
+    <div class="detalle">Comienza el mes siguiente a la adquisición</div></div>
+</div>
+
+<div class="panel tabla-scroll tabla-alta">
+  <table>
+    <thead><tr><th>Período</th><th class="num">Depreciación</th><th class="num">Acumulada</th><th class="num">Valor libro</th></tr></thead>
+    <tbody>
+      {% for f in filas %}
+        <tr><td>{{ nombre_mes(f.mes) }} {{ f.anio }}</td>
+            <td class="num">{{ f.monto | moneda }}</td>
+            <td class="num">{{ f.acumulado | moneda }}</td>
+            <td class="num">{{ f.valor_libro | moneda }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="acciones"><a class="btn sec" href="/activo-fijo">Volver</a></div>
+{% endblock %}

@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block titulo %}Error{% endblock %}
+{% block contenido %}
+<h1>Ocurrió un problema</h1>
+<div class="aviso error" style="white-space:pre-wrap">{{ mensaje_error }}</div>
+<div class="acciones"><a class="btn sec" href="javascript:history.back()">Volver</a><a class="btn" href="/">Ir al panel</a></div>
+{% endblock %}

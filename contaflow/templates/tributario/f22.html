@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block titulo %}Formulario 22{% endblock %}
+{% block contenido %}
+<h1>Propuesta de Formulario 22 — Renta anual</h1>
+<p class="subtitulo">Año comercial {{ prop.anio_comercial }} · {{ prop.empresa }} ({{ prop.rut | rut }})</p>
+
+<div class="aviso info">
+  Parte del resultado financiero del balance y le aplica los agregados y deducciones que indiques,
+  para llegar a la Renta Líquida Imponible. Los ajustes tributarios son criterio del contador.
+</div>
+
+<form class="filtros no-imprimir" method="get">
+  <div class="campo"><label>Año</label>
+    <select name="anio">{% for a in range(hoy().year - 6, hoy().year + 1) %}<option value="{{ a }}" {% if a == anio %}selected{% endif %}>{{ a }}</option>{% endfor %}</select></div>
+  <div class="campo"><label>Agregados (gastos rechazados)</label><input name="agregados" value="{{ agregados }}" placeholder="0"></div>
+  <div class="campo"><label>Deducciones (ingresos no renta)</label><input name="deducciones" value="{{ deducciones }}" placeholder="0"></div>
+  <div class="campo"><label>Pérdida de arrastre</label><input name="perdida" value="{{ perdida }}" placeholder="0"></div>
+  <div class="campo"><label>PPM pagados</label><input name="ppm" value="{{ ppm }}" placeholder="0"></div>
+  <div class="campo"><label>Otros créditos</label><input name="creditos" value="{{ creditos }}" placeholder="0"></div>
+  <button class="btn">Recalcular</button>
+  <a class="btn sec" href="/tributario/f22?anio={{ anio }}&formato=pdf&agregados={{ agregados }}&deducciones={{ deducciones }}&perdida={{ perdida }}&ppm={{ ppm }}&creditos={{ creditos }}">PDF</a>
+  <a class="btn sec" href="/tributario/f22?anio={{ anio }}&formato=xlsx&agregados={{ agregados }}&deducciones={{ deducciones }}&perdida={{ perdida }}&ppm={{ ppm }}&creditos={{ creditos }}">Excel</a>
+</form>
+
+<div class="rejilla c3">
+  <div class="kpi"><div class="etiqueta">Renta Líquida Imponible</div><div class="valor">{{ prop.rli | moneda }}</div></div>
+  <div class="kpi"><div class="etiqueta">Impuesto 1ª Categoría</div><div class="valor">{{ prop.impuesto_primera | moneda }}</div></div>
+  <div class="kpi {{ 'rojo' if prop.saldo > 0 else 'verde' }}">
+    <div class="etiqueta">{{ 'Saldo a pagar' if prop.saldo > 0 else 'Devolución solicitada' }}</div>
+    <div class="valor">{{ prop.saldo | abs | moneda }}</div></div>
+</div>
+
+{% for seccion, codigos in secciones.items() %}
+  <div class="panel">
+    <h3>{{ seccion }}</h3>
+    <table>
+      <thead><tr><th style="width:80px">Código</th><th>Concepto</th><th class="num" style="width:150px">Valor</th></tr></thead>
+      <tbody>
+        {% for c in codigos %}
+          <tr><td class="mono"><strong>{{ c.codigo }}</strong></td>
+              <td>{{ c.etiqueta }}{% if c.nota %}<div class="ayuda">{{ c.nota }}</div>{% endif %}</td>
+              <td class="num">{{ c.valor | moneda }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endfor %}
+
+{% for a in prop.advertencias %}<div class="aviso warn">{{ a }}</div>{% endfor %}
+{% endblock %}

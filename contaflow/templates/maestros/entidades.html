@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block titulo %}Clientes y proveedores{% endblock %}
+{% block contenido %}
+<h1>Clientes y proveedores</h1>
+<p class="subtitulo">{{ lista | length }} registro(s) · el RUT se valida con módulo 11</p>
+
+<form class="filtros" method="get">
+  <div class="campo" style="min-width:240px"><label>Buscar</label><input name="texto" value="{{ texto }}" placeholder="RUT o razón social"></div>
+  <div class="campo"><label>Filtro</label>
+    <select name="filtro" onchange="this.form.submit()">
+      <option value="">Todos</option>
+      <option value="clientes" {% if filtro == 'clientes' %}selected{% endif %}>Sólo clientes</option>
+      <option value="proveedores" {% if filtro == 'proveedores' %}selected{% endif %}>Sólo proveedores</option>
+    </select></div>
+  <button class="btn">Buscar</button>
+</form>
+
+<details class="plegable">
+  <summary>Agregar o modificar</summary>
+  <form method="post" action="/maestros/entidades/guardar">
+    <input type="hidden" name="entidad_id" id="entidad_id">
+    <div class="campos">
+      <div class="campo"><label>RUT *</label><input name="rut" id="f_rut" required></div>
+      <div class="campo" style="grid-column:span 2"><label>Razón social *</label><input name="razon_social" id="f_razon" required></div>
+      <div class="campo"><label>Giro</label><input name="giro" id="f_giro"></div>
+      <div class="campo"><label>Dirección</label><input name="direccion" id="f_dir"></div>
+      <div class="campo"><label>Comuna</label><input name="comuna" id="f_comuna"></div>
+      <div class="campo"><label>Email</label><input name="email" id="f_email"></div>
+      <div class="campo"><label>Teléfono</label><input name="telefono" id="f_tel"></div>
+    </div>
+    <div class="campos">
+      <div class="checkbox"><input type="checkbox" name="es_cliente" id="f_cli" checked><label for="f_cli" style="margin:0">Es cliente</label></div>
+      <div class="checkbox"><input type="checkbox" name="es_proveedor" id="f_prov"><label for="f_prov" style="margin:0">Es proveedor</label></div>
+    </div>
+    <div class="acciones"><button class="btn">Guardar</button></div>
+  </form>
+</details>
+
+<div class="panel tabla-scroll tabla-alta">
+  <table>
+    <thead><tr><th>RUT</th><th>Razón social</th><th>Giro</th><th>Comuna</th><th>Contacto</th><th>Rol</th><th></th></tr></thead>
+    <tbody>
+      {% for e in lista %}
+        <tr>
+          <td class="mono">{{ e.rut | rut }}</td><td><strong>{{ e.razon_social }}</strong></td>
+          <td>{{ e.giro or '—' }}</td><td>{{ e.comuna or '—' }}</td>
+          <td>{{ e.email or e.telefono or '—' }}</td>
+          <td>{% if e.es_cliente %}<span class="etiqueta-estado e-ok">Cliente</span>{% endif %}
+              {% if e.es_proveedor %}<span class="etiqueta-estado e-neutro">Proveedor</span>{% endif %}</td>
+          <td class="num no-imprimir">
+            <button class="btn sec mini" onclick='cargar({{ e.id }}, {{ e.rut | tojson }}, {{ e.razon_social | tojson }}, {{ (e.giro or "") | tojson }}, {{ (e.direccion or "") | tojson }}, {{ (e.comuna or "") | tojson }}, {{ (e.email or "") | tojson }}, {{ (e.telefono or "") | tojson }}, {{ e.es_cliente | tojson }}, {{ e.es_proveedor | tojson }})'>Editar</button>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7"><div class="vacio"><strong>Sin registros</strong>Se crean solos al registrar documentos, o agrégalos aquí.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function cargar(id, rut, razon, giro, dir, comuna, email, tel, cli, prov) {
+  const v = (k, val) => document.getElementById(k).value = val;
+  document.getElementById('entidad_id').value = id;
+  v('f_rut', rut); v('f_razon', razon); v('f_giro', giro); v('f_dir', dir);
+  v('f_comuna', comuna); v('f_email', email); v('f_tel', tel);
+  document.getElementById('f_cli').checked = cli;
+  document.getElementById('f_prov').checked = prov;
+  document.querySelector('details.plegable').open = true;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+{% endblock %}

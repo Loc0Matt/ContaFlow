@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block titulo %}Parámetros{% endblock %}
+{% block contenido %}
+<h1>Parámetros del sistema</h1>
+<p class="subtitulo">Tasas y topes usados en los cálculos tributarios y previsionales.</p>
+
+<form method="post" action="/configuracion/parametros/guardar">
+  <div class="panel">
+    <h3>Parámetros de la empresa</h3>
+    <div class="campos">
+      <div class="campo"><label>Tasa mutual de seguridad (%)</label>
+        <input name="tasa_mutual" value="{{ valores.get('tasa_mutual', '0.93') }}">
+        <div class="ayuda">Cotización básica 0,90% + adicional por riesgo.</div></div>
+      <div class="campo"><label>Proporcionalidad IVA uso común (%)</label>
+        <input name="proporcionalidad_iva" value="{{ valores.get('proporcionalidad_iva', '100') }}">
+        <div class="ayuda">Porcentaje del IVA de uso común con derecho a crédito fiscal.</div></div>
+      <div class="campo"><label>Día de pago de remuneraciones</label>
+        <input name="dia_pago_remuneraciones" value="{{ valores.get('dia_pago_remuneraciones', '5') }}"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Tasas de cotización AFP (10% + comisión)</h3>
+    <div class="campos">
+      {% for a in afps %}
+        <div class="campo"><label>{{ a.nombre }}</label><input name="afp_{{ a.id }}" value="{{ a.tasa }}"></div>
+      {% endfor %}
+    </div>
+    <div class="ayuda">Actualízalas cuando la Superintendencia de Pensiones publique cambios.</div>
+  </div>
+
+  <div class="acciones"><button class="btn">Guardar parámetros</button></div>
+</form>
+
+<div class="rejilla c2">
+  <div class="panel">
+    <h3>Topes y tasas previsionales vigentes</h3>
+    <table>
+      <tbody>
+        {% for concepto, valor in previsional.items() %}
+          <tr><td>{{ concepto }}</td><td class="num">{{ valor }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h3>Asignación familiar por tramo</h3>
+    <table>
+      <thead><tr><th>Tramo</th><th class="num">Monto por carga</th><th class="num">Renta tope</th></tr></thead>
+      <tbody>
+        {% for tramo, datos in asignacion.items() %}
+          <tr><td>{{ tramo }}</td><td class="num">{{ datos[0] | moneda }}</td>
+              <td class="num">{{ datos[1] | moneda if datos[1] else 'Sin tope' }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="rejilla c2">
+  <div class="panel">
+    <h3>Impuesto Único de Segunda Categoría (en UTM)</h3>
+    <table>
+      <thead><tr><th class="num">Desde</th><th class="num">Hasta</th><th class="num">Factor</th><th class="num">Rebaja (UTM)</th></tr></thead>
+      <tbody>
+        {% for desde, hasta, factor, rebaja in tabla_impuesto %}
+          <tr><td class="num">{{ desde }}</td><td class="num">{{ hasta if hasta else 'y más' }}</td>
+              <td class="num">{{ (factor * 100) | round(1) }}%</td><td class="num">{{ rebaja }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h3>Retención de honorarios por año (Ley 21.133)</h3>
+    <table>
+      <thead><tr><th>Año</th><th class="num">Tasa</th></tr></thead>
+      <tbody>
+        {% for anio, tasa in retenciones %}
+          <tr><td>{{ anio }}</td><td class="num">{{ (tasa * 100) | round(2) }}%</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

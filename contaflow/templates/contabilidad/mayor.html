@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block titulo %}Libro Mayor{% endblock %}
+{% block contenido %}
+<h1>Libro Mayor</h1>
+<p class="subtitulo">Movimientos y saldo corrido de una cuenta.</p>
+
+<form class="filtros no-imprimir" method="get">
+  <div class="campo" style="min-width:340px"><label>Cuenta</label>
+    <select name="cuenta_id" onchange="this.form.submit()">
+      <option value="">— Seleccionar —</option>
+      {% for c in cuentas %}
+        <option value="{{ c.id }}" {% if cuenta and c.id == cuenta.id %}selected{% endif %}>{{ c.codigo }} · {{ c.nombre }}</option>
+      {% endfor %}
+    </select></div>
+  <div class="campo"><label>Desde</label><input type="date" name="desde" value="{{ desde }}"></div>
+  <div class="campo"><label>Hasta</label><input type="date" name="hasta" value="{{ hasta }}"></div>
+  <button class="btn">Ver</button>
+  {% if cuenta %}
+    <a class="btn sec" href="/contabilidad/mayor?cuenta_id={{ cuenta.id }}&desde={{ desde }}&hasta={{ hasta }}&formato=pdf">PDF</a>
+    <a class="btn sec" href="/contabilidad/mayor?cuenta_id={{ cuenta.id }}&desde={{ desde }}&hasta={{ hasta }}&formato=xlsx">Excel</a>
+  {% endif %}
+</form>
+
+{% if cuenta %}
+<div class="panel tabla-scroll">
+  <h3>{{ cuenta.codigo }} · {{ cuenta.nombre }}</h3>
+  <table>
+    <thead><tr><th>Fecha</th><th>Comprobante</th><th>Glosa</th><th>Auxiliar</th><th>Doc.</th><th class="num">Debe</th><th class="num">Haber</th><th class="num">Saldo</th></tr></thead>
+    <tbody>
+      <tr class="total"><td colspan="7">Saldo anterior</td><td class="num">{{ saldo_anterior | moneda }}</td></tr>
+      {% for m, acumulado in filas %}
+        <tr>
+          <td>{{ m.comprobante.fecha | fecha }}</td>
+          <td><a href="/contabilidad/comprobantes/{{ m.comprobante.id }}" class="mono">{{ m.comprobante.folio }}</a></td>
+          <td>{{ m.glosa or m.comprobante.glosa }}</td>
+          <td>{{ m.entidad.razon_social if m.entidad else '' }}</td>
+          <td>{{ m.documento_folio or '' }}</td>
+          <td class="num">{{ m.debe | moneda if m.debe else '' }}</td>
+          <td class="num">{{ m.haber | moneda if m.haber else '' }}</td>
+          <td class="num {{ 'neg' if acumulado < 0 }}">{{ acumulado | moneda }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="8"><div class="vacio">Sin movimientos en el rango seleccionado.</div></td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot><tr><td colspan="5">Totales del período</td>
+      <td class="num">{{ total_debe | moneda }}</td><td class="num">{{ total_haber | moneda }}</td>
+      <td class="num">{{ (saldo_anterior + total_debe - total_haber) | moneda }}</td></tr></tfoot>
+  </table>
+</div>
+{% else %}
+<div class="panel"><div class="vacio"><strong>Selecciona una cuenta</strong>Elige una cuenta imputable para ver su mayor.</div></div>
+{% endif %}
+{% endblock %}

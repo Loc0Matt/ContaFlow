@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block contenido %}
+<h1>{{ titulo }}</h1>
+<p class="subtitulo">{{ periodo_etiqueta(anio_activo, mes_activo) }} · {{ empresa.razon_social }}</p>
+
+<div class="acciones no-imprimir">
+  <a class="btn" href="/tributario/documentos/{{ ruta }}/nuevo">Registrar documento</a>
+  <a class="btn sec" href="/tributario/libro/{{ ruta }}?formato=xlsx">Excel (con resumen)</a>
+  <a class="btn sec" href="/tributario/libro/{{ ruta }}?formato=csv">CSV formato SII</a>
+  <a class="btn sec" href="/tributario/libro/{{ ruta }}?formato=pdf">PDF</a>
+</div>
+
+<div class="panel">
+  <h3>Resumen por tipo de documento</h3>
+  <div class="tabla-scroll">
+    <table>
+      <thead><tr><th>Tipo</th><th>Documento</th><th class="num">Cant.</th><th class="num">Exento</th><th class="num">Neto</th><th class="num">IVA</th><th class="num">Otros imp.</th><th class="num">Total</th></tr></thead>
+      <tbody>
+        {% for r in libro.resumen.values() %}
+          <tr>
+            <td class="mono">{{ r.codigo }}</td><td>{{ r.nombre }}</td>
+            <td class="num">{{ r.cantidad }}</td><td class="num">{{ r.exento | moneda }}</td>
+            <td class="num">{{ r.neto | moneda }}</td><td class="num">{{ r.iva | moneda }}</td>
+            <td class="num">{{ (r.impuesto_adicional + r.iva_no_recuperable) | moneda }}</td>
+            <td class="num">{{ r.total | moneda }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="8"><div class="vacio">Sin documentos en el período.</div></td></tr>
+        {% endfor %}
+      </tbody>
+      {% if libro.resumen %}
+      <tfoot><tr>
+        <td colspan="2">Totales</td><td class="num">{{ libro.totales.cantidad }}</td>
+        <td class="num">{{ libro.totales.exento | moneda }}</td><td class="num">{{ libro.totales.neto | moneda }}</td>
+        <td class="num">{{ libro.totales.iva | moneda }}</td>
+        <td class="num">{{ (libro.totales.impuesto_adicional + libro.totales.iva_no_recuperable) | moneda }}</td>
+        <td class="num">{{ libro.totales.total | moneda }}</td>
+      </tr></tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+
+<div class="panel tabla-scroll tabla-alta">
+  <h3>Detalle del libro</h3>
+  <table>
+    <thead><tr>
+      <th>Tipo</th><th>Folio</th><th>Fecha</th><th>RUT</th><th>Razón social</th>
+      <th class="num">Exento</th><th class="num">Neto</th><th class="num">IVA</th><th class="num">Total</th>
+      {% if clase.value == 'COMPRA' %}<th>Tipo compra</th>{% endif %}
+      <th>Asiento</th><th></th>
+    </tr></thead>
+    <tbody>
+      {% for d in libro.documentos %}
+        <tr>
+          <td class="mono">{{ d.tipo_dte }}</td>
+          <td class="mono">{{ d.folio }}</td>
+          <td>{{ d.fecha_emision | fecha }}</td>
+          <td class="mono">{{ d.entidad_rut | rut }}</td>
+          <td>{{ d.entidad_nombre }}</td>
+          <td class="num">{{ d.exento | moneda }}</td>
+          <td class="num">{{ d.neto | moneda }}</td>
+          <td class="num">{{ d.iva | moneda }}</td>
+          <td class="num"><strong>{{ (d.total * d.signo) | moneda }}</strong></td>
+          {% if clase.value == 'COMPRA' %}<td>{{ d.tipo_compra.value.replace('_', ' ') | title }}</td>{% endif %}
+          <td>{% if d.comprobante_id %}<a href="/contabilidad/comprobantes/{{ d.comprobante_id }}">Ver</a>{% else %}<span class="etiqueta-estado e-warn">Sin asiento</span>{% endif %}</td>
+          <td class="num no-imprimir">
+            <form method="post" action="/tributario/documentos/{{ d.id }}/anular"
+                  onsubmit="return confirm('¿Anular el documento {{ d.folio }}? Se eliminará su asiento contable.')">
+              <button class="btn sec mini">Anular</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="12"><div class="vacio"><strong>Sin documentos</strong>Registra el primer documento del período.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

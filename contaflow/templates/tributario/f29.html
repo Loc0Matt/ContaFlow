@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block titulo %}Formulario 29{% endblock %}
+{% block contenido %}
+<h1>Propuesta de Formulario 29</h1>
+<p class="subtitulo">{{ periodo_etiqueta(prop.anio, prop.mes) }} · {{ prop.empresa }} ({{ prop.rut | rut }})</p>
+
+<div class="aviso info">
+  Esta propuesta se calcula desde tus libros de compras, ventas, honorarios y remuneraciones.
+  <strong>No se envía al SII</strong>: úsala como base para llenar el formulario oficial.
+</div>
+
+<form class="filtros no-imprimir" method="get">
+  <div class="campo"><label>Remanente mes anterior</label>
+    <input name="remanente" value="{{ remanente }}" placeholder="{{ prop.remanente_anterior }}">
+    <div class="ayuda">Vacío = toma el del F29 guardado.</div></div>
+  <div class="campo"><label>Tasa PPM (%)</label><input name="ppm_tasa" value="{{ ppm_tasa }}" placeholder="{{ empresa.tasa_ppm }}"></div>
+  <div class="campo"><label>Crédito SENCE</label><input name="sence" value="{{ sence }}" placeholder="0"></div>
+  <button class="btn">Recalcular</button>
+  <a class="btn sec" href="/tributario/f29?formato=pdf&remanente={{ remanente }}&ppm_tasa={{ ppm_tasa }}&sence={{ sence }}">PDF</a>
+  <a class="btn sec" href="/tributario/f29?formato=xlsx&remanente={{ remanente }}&ppm_tasa={{ ppm_tasa }}&sence={{ sence }}">Excel</a>
+  <a class="btn sec" href="/tributario/f29?formato=csv&remanente={{ remanente }}&ppm_tasa={{ ppm_tasa }}&sence={{ sence }}">CSV</a>
+</form>
+
+<div class="rejilla c4">
+  <div class="kpi"><div class="etiqueta">IVA determinado</div>
+    <div class="valor {{ 'neg' if prop.iva_determinado > 0 }}">{{ prop.iva_determinado | moneda }}</div>
+    <div class="detalle">Débitos − créditos − remanente</div></div>
+  <div class="kpi"><div class="etiqueta">Remanente anterior (cód. 504)</div>
+    <div class="valor">{{ prop.remanente_anterior | moneda }}</div></div>
+  <div class="kpi verde"><div class="etiqueta">Remanente siguiente (cód. 77)</div>
+    <div class="valor">{{ prop.remanente_siguiente | moneda }}</div></div>
+  <div class="kpi {{ 'rojo' if prop.total_a_pagar }}"><div class="etiqueta">Total a pagar (cód. 91)</div>
+    <div class="valor">{{ prop.total_a_pagar | moneda }}</div></div>
+</div>
+
+{% for seccion, codigos in secciones.items() %}
+  <div class="panel">
+    <h3>{{ seccion }}</h3>
+    <div class="tabla-scroll">
+      <table>
+        <thead><tr><th style="width:80px">Código</th><th>Concepto</th><th class="num" style="width:150px">Valor</th></tr></thead>
+        <tbody>
+          {% for c in codigos %}
+            <tr>
+              <td class="mono"><strong>{{ c.codigo }}</strong></td>
+              <td>{{ c.etiqueta }}{% if c.nota %}<div class="ayuda">{{ c.nota }}</div>{% endif %}</td>
+              <td class="num">{{ c.valor | moneda }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endfor %}
+
+<div class="panel no-imprimir">
+  <h3>Guardar declaración del período</h3>
+  <p class="ayuda">Al guardar, el remanente del código 77 queda disponible como remanente anterior del mes siguiente.</p>
+  <form method="post" action="/tributario/f29/guardar">
+    <input type="hidden" name="remanente" value="{{ remanente }}">
+    <input type="hidden" name="ppm_tasa" value="{{ ppm_tasa }}">
+    <input type="hidden" name="sence" value="{{ sence }}">
+    <button class="btn acento">Guardar F29 de {{ periodo_etiqueta(prop.anio, prop.mes) }}</button>
+  </form>
+</div>
+
+{% for a in prop.advertencias %}<div class="aviso warn">{{ a }}</div>{% endfor %}
+{% endblock %}

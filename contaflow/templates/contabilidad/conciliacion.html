@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block titulo %}Conciliación bancaria{% endblock %}
+{% block contenido %}
+<h1>Conciliación bancaria</h1>
+<p class="subtitulo">Marca los movimientos que ya aparecen en la cartola del banco. {{ periodo_etiqueta(anio_activo, mes_activo) }}</p>
+
+<form class="filtros" method="get">
+  <div class="campo" style="min-width:320px"><label>Cuenta bancaria</label>
+    <select name="cuenta_id" onchange="this.form.submit()">
+      {% for b in bancos %}<option value="{{ b.id }}" {% if cuenta and b.id == cuenta.id %}selected{% endif %}>{{ b.codigo }} · {{ b.nombre }}</option>{% endfor %}
+    </select></div>
+</form>
+
+{% if not bancos %}
+  <div class="panel"><div class="vacio"><strong>No hay cuentas marcadas como banco</strong>
+    Marca la casilla «Es cuenta bancaria» en el plan de cuentas.</div></div>
+{% elif cuenta %}
+  <div class="rejilla c3">
+    <div class="kpi"><div class="etiqueta">Saldo según libros</div><div class="valor">{{ saldo_libro | moneda }}</div></div>
+    <div class="kpi"><div class="etiqueta">Movimientos del mes</div><div class="valor">{{ movimientos | length }}</div></div>
+    <div class="kpi"><div class="etiqueta">Conciliados</div>
+      <div class="valor">{{ movimientos | selectattr('conciliado') | list | length }}</div></div>
+  </div>
+
+  <form method="post" action="/contabilidad/conciliacion/marcar">
+    <input type="hidden" name="cuenta_id" value="{{ cuenta.id }}">
+    <div class="panel tabla-scroll">
+      <table>
+        <thead><tr><th style="width:40px">✓</th><th>Fecha</th><th>Comprobante</th><th>Glosa</th><th class="num">Debe</th><th class="num">Haber</th></tr></thead>
+        <tbody>
+          {% for m in movimientos %}
+            <tr>
+              <td>
+                <input type="hidden" name="movimiento_id" value="{{ m.id }}">
+                <input type="checkbox" name="conciliado" value="{{ m.id }}" {% if m.conciliado %}checked{% endif %}>
+              </td>
+              <td>{{ m.comprobante.fecha | fecha }}</td>
+              <td class="mono">{{ m.comprobante.folio }}</td>
+              <td>{{ m.glosa or m.comprobante.glosa }}</td>
+              <td class="num">{{ m.debe | moneda if m.debe else '' }}</td>
+              <td class="num">{{ m.haber | moneda if m.haber else '' }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="6"><div class="vacio">Sin movimientos bancarios en el período.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if movimientos %}<div class="acciones"><button class="btn">Guardar conciliación</button></div>{% endif %}
+  </form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block titulo %}Respaldos{% endblock %}
+{% block contenido %}
+<h1>Respaldos y seguridad</h1>
+<p class="subtitulo">Tus datos viven en un único archivo SQLite dentro de <span class="mono">{{ carpeta }}</span></p>
+
+<div class="panel">
+  <h3>Crear respaldo</h3>
+  <p class="ayuda">Copia la base de datos completa (todas las empresas) a la carpeta de respaldos.
+     Hazlo antes de cerrar un ejercicio o de restaurar.</p>
+  <form method="post" action="/configuracion/respaldos/crear">
+    <button class="btn acento">Crear respaldo ahora</button>
+  </form>
+</div>
+
+<div class="panel">
+  <h3>Respaldos disponibles</h3>
+  <table>
+    <thead><tr><th>Archivo</th><th class="num">Tamaño</th><th></th></tr></thead>
+    <tbody>
+      {% for a in archivos %}
+        <tr>
+          <td class="mono">{{ a.nombre }}</td>
+          <td class="num">{{ a.tamano }} KB</td>
+          <td class="num">
+            <form method="post" action="/configuracion/respaldos/restaurar" style="display:inline"
+                  onsubmit="return confirm('Se reemplazarán TODOS los datos actuales por los de {{ a.nombre }}. Se guardará antes una copia del estado actual. ¿Continuar?')">
+              <input type="hidden" name="nombre" value="{{ a.nombre }}">
+              <button class="btn peligro mini">Restaurar</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="3"><div class="vacio">Aún no hay respaldos.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <h3>Cambiar mi contraseña</h3>
+  <form method="post" action="/configuracion/cambiar-password">
+    <div class="campos">
+      <div class="campo"><label>Contraseña actual</label><input type="password" name="password_actual" required></div>
+      <div class="campo"><label>Nueva contraseña</label><input type="password" name="password_nueva" required></div>
+    </div>
+    <div class="acciones"><button class="btn">Cambiar contraseña</button></div>
+  </form>
+</div>
+{% endblock %}

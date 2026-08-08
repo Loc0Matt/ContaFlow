@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block titulo %}Indicadores{% endblock %}
+{% block contenido %}
+<h1>Indicadores económicos {{ anio }}</h1>
+<p class="subtitulo">UF, UTM, UTA, IPC e ingreso mínimo. El sistema trabaja sin conexión, así que estos valores se cargan a mano.</p>
+
+<div class="aviso info">
+  Se usan para calcular liquidaciones de sueldo (topes imponibles y el Impuesto Único).
+  Sin la UF, la UTM y el ingreso mínimo del mes, las liquidaciones no se pueden emitir.
+</div>
+
+<form class="filtros" method="get">
+  <div class="campo"><label>Año</label>
+    <select name="anio" onchange="this.form.submit()">
+      {% for a in range(hoy().year - 6, hoy().year + 2) %}<option value="{{ a }}" {% if a == anio %}selected{% endif %}>{{ a }}</option>{% endfor %}
+    </select></div>
+</form>
+
+<form method="post" action="/maestros/indicadores/guardar">
+  <input type="hidden" name="anio" value="{{ anio }}">
+  <div class="panel tabla-scroll">
+    <table>
+      <thead><tr><th>Mes</th><th class="num">UF (último día)</th><th class="num">UTM</th><th class="num">UTA</th><th class="num">IPC %</th><th class="num">Ingreso mínimo</th><th class="num">Dólar</th></tr></thead>
+      <tbody>
+        {% for numero, nombre in MESES %}
+          {% set r = registros.get(numero) %}
+          <tr>
+            <td>{{ nombre }}</td>
+            <td><input name="uf_{{ numero }}" value="{{ r.uf if r else '' }}" style="text-align:right"></td>
+            <td><input name="utm_{{ numero }}" value="{{ r.utm if r else '' }}" style="text-align:right"></td>
+            <td><input name="uta_{{ numero }}" value="{{ r.uta if r else '' }}" style="text-align:right"></td>
+            <td><input name="ipc_{{ numero }}" value="{{ r.ipc if r else '' }}" style="text-align:right"></td>
+            <td><input name="imm_{{ numero }}" value="{{ r.ingreso_minimo if r else '' }}" style="text-align:right"></td>
+            <td><input name="dolar_{{ numero }}" value="{{ r.dolar if r else '' }}" style="text-align:right"></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="acciones"><button class="btn">Guardar indicadores {{ anio }}</button></div>
+</form>
+
+<div class="panel">
+  <h3>Copiar de otro año</h3>
+  <p class="ayuda">Duplica los valores como punto de partida; después ajusta mes a mes.</p>
+  <form method="post" action="/maestros/indicadores/copiar" class="filtros">
+    <div class="campo"><label>Desde el año</label><input name="anio_origen" value="{{ anio - 1 }}" style="width:100px"></div>
+    <div class="campo"><label>Hacia el año</label><input name="anio_destino" value="{{ anio }}" style="width:100px"></div>
+    <button class="btn sec">Copiar</button>
+  </form>
+</div>
+{% endblock %}

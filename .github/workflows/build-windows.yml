@@ -1,0 +1,107 @@
+name: Construir ContaFlow.exe (Windows)
+
+# PyInstaller no permite compilación cruzada: el .exe debe generarse en Windows.
+# Este workflow lo construye en un runner windows-latest y lo publica como
+# artefacto descargable (y como release cuando se empuja una etiqueta v*).
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  pruebas:
+    name: Pruebas (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt httpx
+      - name: Ejecutar suite de pruebas
+        run: python -m unittest discover -s tests -v
+
+  ejecutable:
+    name: Construir ejecutable
+    needs: pruebas
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller httpx
+
+      - name: Ejecutar pruebas en Windows
+        run: python -m unittest discover -s tests -v
+
+      - name: Empaquetar con PyInstaller
+        run: pyinstaller build/contaflow.spec --clean --noconfirm
+
+      - name: Verificar que el ejecutable arranca
+        shell: pwsh
+        run: |
+          if (-not (Test-Path dist/ContaFlow.exe)) {
+            throw "No se generó dist/ContaFlow.exe"
+          }
+          $tamano = (Get-Item dist/ContaFlow.exe).Length / 1MB
+          Write-Host ("Tamano del ejecutable: {0:N1} MB" -f $tamano)
+
+          # Arranca el .exe y comprueba que el servidor responde en /salud.
+          $env:CONTAFLOW_DATA = "$env:RUNNER_TEMP\contaflow-smoke"
+          $proceso = Start-Process -FilePath dist/ContaFlow.exe -PassThru
+          $ok = $false
+          foreach ($i in 1..30) {
+            Start-Sleep -Seconds 2
+            try {
+              $r = Invoke-RestMethod -Uri "http://127.0.0.1:8777/salud" -TimeoutSec 3
+              if ($r.estado -eq "ok") { $ok = $true; break }
+            } catch { }
+          }
+          Stop-Process -Id $proceso.Id -Force -ErrorAction SilentlyContinue
+          if (-not $ok) { throw "El ejecutable no respondio en /salud" }
+          Write-Host "El ejecutable arranca y responde correctamente."
+
+      - name: Preparar paquete de distribución
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path paquete | Out-Null
+          Copy-Item dist/ContaFlow.exe paquete/
+          Copy-Item README.md paquete/LEEME.md
+          Copy-Item docs/manual.md paquete/ -ErrorAction SilentlyContinue
+
+      - name: Publicar artefacto descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: ContaFlow-Windows
+          path: paquete/
+          retention-days: 90
+
+      - name: Crear release al etiquetar
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/ContaFlow.exe
+          body: |
+            ## ContaFlow ${{ github.ref_name }}
+
+            Sistema contable chileno multiempresa para uso personal.
+
+            **Instalación:** descarga `ContaFlow.exe`, colócalo donde quieras y ábrelo
+            con doble clic. No requiere instalar Python ni nada más.
+
+            Windows SmartScreen puede advertir por tratarse de un ejecutable sin firma
+            digital: elige «Más información» → «Ejecutar de todas formas».

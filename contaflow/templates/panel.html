@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block titulo %}Panel{% endblock %}
+{% block contenido %}
+<h1>{{ empresa.razon_social }}</h1>
+<p class="subtitulo">
+  {{ empresa.rut | rut }} · {{ empresa.regimen.etiqueta }} ·
+  Período de trabajo: <strong>{{ periodo_etiqueta(anio_activo, mes_activo) }}</strong>
+</p>
+
+<div class="rejilla c4">
+  <div class="kpi">
+    <div class="etiqueta">Ventas del mes</div>
+    <div class="valor">{{ ventas_monto | moneda }}</div>
+    <div class="detalle">{{ ventas_cant }} documento(s) emitido(s)</div>
+  </div>
+  <div class="kpi">
+    <div class="etiqueta">Compras del mes</div>
+    <div class="valor">{{ compras_monto | moneda }}</div>
+    <div class="detalle">{{ compras_cant }} documento(s) recibido(s)</div>
+  </div>
+  <div class="kpi {{ 'rojo' if f29 and f29.total_a_pagar else 'verde' }}">
+    <div class="etiqueta">F29 del período</div>
+    <div class="valor">{{ (f29.total_a_pagar if f29 and f29.total_a_pagar else (f29.remanente_siguiente if f29 else 0)) | moneda }}</div>
+    <div class="detalle">{{ 'Total a pagar (cód. 91)' if f29 and f29.total_a_pagar else 'Remanente crédito fiscal (cód. 77)' }}</div>
+  </div>
+  <div class="kpi {{ 'verde' if eerr.resultado_neto >= 0 else 'rojo' }}">
+    <div class="etiqueta">Resultado acumulado {{ anio_activo }}</div>
+    <div class="valor">{{ eerr.resultado_neto | moneda }}</div>
+    <div class="detalle">Ingresos {{ eerr.total_ingresos | moneda }} · Gastos {{ (eerr.total_costos + eerr.total_gastos_admin) | moneda }}</div>
+  </div>
+</div>
+
+<div class="rejilla c2" style="margin-top:16px">
+  <div class="panel">
+    <h3>Disponible en caja y bancos</h3>
+    {% if saldos_banco %}
+      <table>
+        <thead><tr><th>Cuenta</th><th class="num">Saldo</th></tr></thead>
+        <tbody>
+          {% for s in saldos_banco %}
+            <tr>
+              <td>{{ s.cuenta.codigo }} · {{ s.cuenta.nombre }}</td>
+              <td class="num {{ 'neg' if s.saldo < 0 }}">{{ s.saldo | moneda }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr><td>Total disponible</td>
+              <td class="num">{{ saldos_banco | sum(attribute='saldo') | moneda }}</td></tr>
+        </tfoot>
+      </table>
+    {% else %}
+      <div class="vacio">Aún no hay movimientos en cuentas de efectivo este año.</div>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h3>Vencimientos próximos (30 días)</h3>
+    {% if vencimientos %}
+      <table>
+        <thead><tr><th>Vence</th><th>Documento</th><th>Contraparte</th><th class="num">Monto</th></tr></thead>
+        <tbody>
+          {% for d in vencimientos %}
+            <tr>
+              <td>{{ d.fecha_vencimiento | fecha }}</td>
+              <td>{{ d.tipo_dte }}-{{ d.folio }}</td>
+              <td>{{ d.entidad_nombre }}</td>
+              <td class="num">{{ d.total | moneda }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="vacio">Sin documentos por vencer.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="rejilla c2">
+  <div class="panel">
+    <h3>Resumen de resultados del año</h3>
+    <table>
+      <tbody>
+        <tr><td>Ingresos de explotación</td><td class="num">{{ eerr.total_ingresos | moneda }}</td></tr>
+        <tr><td>Costos de explotación</td><td class="num">({{ eerr.total_costos | moneda }})</td></tr>
+        <tr class="total"><td>Margen bruto</td><td class="num">{{ eerr.margen_bruto | moneda }}</td></tr>
+        <tr><td>Gastos de administración y ventas</td><td class="num">({{ eerr.total_gastos_admin | moneda }})</td></tr>
+        <tr class="total"><td>Resultado operacional</td><td class="num">{{ eerr.resultado_operacional | moneda }}</td></tr>
+        <tr><td>Otros ingresos</td><td class="num">{{ eerr.total_otros_ingresos | moneda }}</td></tr>
+        <tr><td>Gastos fuera de explotación</td><td class="num">({{ eerr.total_no_operacionales | moneda }})</td></tr>
+        <tr class="total"><td>Resultado antes de impuesto</td><td class="num">{{ eerr.antes_impuesto | moneda }}</td></tr>
+      </tbody>
+    </table>
+    <div class="acciones"><a class="btn sec mini" href="/informes/resultados">Ver informe completo</a></div>
+  </div>
+
+  <div class="panel">
+    <h3>Últimos comprobantes</h3>
+    {% if ultimos %}
+      <table>
+        <thead><tr><th>Folio</th><th>Fecha</th><th>Glosa</th><th class="num">Monto</th></tr></thead>
+        <tbody>
+          {% for c in ultimos %}
+            <tr>
+              <td><a href="/contabilidad/comprobantes/{{ c.id }}">{{ c.folio }}</a></td>
+              <td>{{ c.fecha | fecha }}</td>
+              <td>{{ c.glosa[:52] }}</td>
+              <td class="num">{{ c.total_debe | moneda }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="vacio">Todavía no se registran asientos contables.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="panel">
+  <h3>Accesos rápidos</h3>
+  <div class="acciones">
+    <a class="btn" href="/tributario/documentos/ventas/nuevo">Registrar venta</a>
+    <a class="btn" href="/tributario/documentos/compras/nuevo">Registrar compra</a>
+    <a class="btn sec" href="/contabilidad/comprobantes/nuevo">Nuevo asiento</a>
+    <a class="btn sec" href="/tributario/f29">Propuesta F29</a>
+    <a class="btn sec" href="/remuneraciones/liquidaciones">Liquidar sueldos ({{ trabajadores }} activos)</a>
+    <a class="btn sec" href="/contabilidad/balance">Balance</a>
+  </div>
+</div>
+{% endblock %}

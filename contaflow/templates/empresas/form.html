@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar empresa' if registro else 'Nueva empresa' }}{% endblock %}
+{% block contenido %}
+<h1>{{ 'Editar empresa' if registro else 'Nueva empresa' }}</h1>
+<p class="subtitulo">{% if not registro %}Al guardar se creará automáticamente el plan de cuentas chileno con más de 140 cuentas.{% endif %}</p>
+
+<form method="post" action="/empresas/guardar">
+  <input type="hidden" name="empresa_id" value="{{ registro.id if registro else '' }}">
+
+  <div class="panel">
+    <h3>Identificación tributaria</h3>
+    <div class="campos">
+      <div class="campo">
+        <label for="rut">RUT *</label>
+        <input id="rut" name="rut" value="{{ registro.rut if registro else '' }}" placeholder="76.123.456-7" required>
+        <div class="ayuda">Se valida el dígito verificador (módulo 11).</div>
+      </div>
+      <div class="campo"><label>Razón social *</label>
+        <input name="razon_social" value="{{ registro.razon_social if registro else '' }}" required></div>
+      <div class="campo"><label>Nombre de fantasía</label>
+        <input name="nombre_fantasia" value="{{ registro.nombre_fantasia or '' if registro else '' }}"></div>
+      <div class="campo"><label>Giro</label>
+        <input name="giro" value="{{ registro.giro or '' if registro else '' }}"></div>
+      <div class="campo"><label>Código actividad económica</label>
+        <input name="actividad_codigo" value="{{ registro.actividad_codigo or '' if registro else '' }}" placeholder="620200"></div>
+      <div class="campo"><label>Fecha inicio de actividades</label>
+        <input type="date" name="fecha_inicio_actividades" value="{{ registro.fecha_inicio_actividades if registro and registro.fecha_inicio_actividades else '' }}"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Régimen y tributación</h3>
+    <div class="campos">
+      <div class="campo">
+        <label>Régimen tributario</label>
+        <select name="regimen">
+          {% for r in regimenes %}
+            <option value="{{ r.value }}" {% if registro and registro.regimen == r %}selected{% endif %}>{{ r.etiqueta }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="campo">
+        <label>Tasa de PPM (%)</label>
+        <input name="tasa_ppm" value="{{ registro.tasa_ppm if registro else '0.25' }}">
+        <div class="ayuda">Se aplica sobre las ventas netas para el código 62 del F29.</div>
+      </div>
+    </div>
+    <div class="checkbox">
+      <input type="checkbox" id="cc" name="contabilidad_completa" {% if not registro or registro.contabilidad_completa %}checked{% endif %}>
+      <label for="cc" style="margin:0">Lleva contabilidad completa</label>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Domicilio y contacto</h3>
+    <div class="campos">
+      <div class="campo"><label>Dirección</label><input name="direccion" value="{{ registro.direccion or '' if registro else '' }}"></div>
+      <div class="campo"><label>Comuna</label><input name="comuna" value="{{ registro.comuna or '' if registro else '' }}"></div>
+      <div class="campo"><label>Ciudad</label><input name="ciudad" value="{{ registro.ciudad or '' if registro else '' }}"></div>
+      <div class="campo"><label>Teléfono</label><input name="telefono" value="{{ registro.telefono or '' if registro else '' }}"></div>
+      <div class="campo"><label>Email</label><input type="email" name="email" value="{{ registro.email or '' if registro else '' }}"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Representante legal</h3>
+    <div class="campos">
+      <div class="campo"><label>RUT representante</label><input name="representante_rut" value="{{ registro.representante_rut or '' if registro else '' }}"></div>
+      <div class="campo"><label>Nombre representante</label><input name="representante_nombre" value="{{ registro.representante_nombre or '' if registro else '' }}"></div>
+    </div>
+  </div>
+
+  <div class="acciones">
+    <button class="btn">Guardar empresa</button>
+    <a class="btn sec" href="/empresas">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

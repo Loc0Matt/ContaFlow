@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titulo %}Empresas{% endblock %}
+{% block contenido %}
+<h1>Empresas</h1>
+<p class="subtitulo">Cada empresa mantiene su propio plan de cuentas, libros, declaraciones y personal.</p>
+<div class="acciones"><a class="btn" href="/empresas/nueva">Nueva empresa</a></div>
+<div class="panel tabla-scroll">
+  <table>
+    <thead><tr><th>RUT</th><th>Razón social</th><th>Giro</th><th>Régimen</th><th class="num">Tasa PPM</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+      {% for e in lista %}
+        <tr>
+          <td class="mono">{{ e.rut | rut }}</td>
+          <td><strong>{{ e.razon_social }}</strong>{% if e.nombre_fantasia %}<div class="ayuda">{{ e.nombre_fantasia }}</div>{% endif %}</td>
+          <td>{{ e.giro or '—' }}</td>
+          <td>{{ e.regimen.etiqueta }}</td>
+          <td class="num">{{ e.tasa_ppm }}%</td>
+          <td><span class="etiqueta-estado {{ 'e-ok' if e.activa else 'e-error' }}">{{ 'Activa' if e.activa else 'Inactiva' }}</span></td>
+          <td class="num">
+            <a class="btn sec mini" href="/empresas/{{ e.id }}/editar">Editar</a>
+            <form method="post" action="/empresas/{{ e.id }}/estado" style="display:inline">
+              <button class="btn sec mini">{{ 'Desactivar' if e.activa else 'Activar' }}</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7"><div class="vacio"><strong>Sin empresas</strong>Crea la primera para comenzar.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

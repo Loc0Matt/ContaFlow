@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block titulo %}Balance 8 columnas{% endblock %}
+{% block contenido %}
+<h1>Balance de Comprobación y Saldos</h1>
+<p class="subtitulo">Acumulado del ejercicio {{ anio_activo }} hasta {{ nombre_mes(mes_corte) }} · 8 columnas</p>
+
+<form class="filtros no-imprimir" method="get">
+  <div class="campo"><label>Hasta el mes</label>
+    <select name="hasta_mes" onchange="this.form.submit()">
+      {% for numero, nombre in MESES %}<option value="{{ numero }}" {% if numero == mes_corte %}selected{% endif %}>{{ nombre }}</option>{% endfor %}
+    </select></div>
+  <a class="btn sec" href="/contabilidad/balance?hasta_mes={{ mes_corte }}&formato=pdf">PDF</a>
+  <a class="btn sec" href="/contabilidad/balance?hasta_mes={{ mes_corte }}&formato=xlsx">Excel</a>
+  <a class="btn sec" href="javascript:print()">Imprimir</a>
+</form>
+
+<div class="panel tabla-scroll">
+  <table>
+    <thead>
+      <tr>
+        <th rowspan="2">Código</th><th rowspan="2">Cuenta</th>
+        <th class="num" colspan="2">Sumas</th><th class="num" colspan="2">Saldos</th>
+        <th class="num" colspan="2">Inventario</th><th class="num" colspan="2">Resultado</th>
+      </tr>
+      <tr>
+        <th class="num">Debe</th><th class="num">Haber</th>
+        <th class="num">Deudor</th><th class="num">Acreedor</th>
+        <th class="num">Activo</th><th class="num">Pasivo</th>
+        <th class="num">Pérdida</th><th class="num">Ganancia</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for f in filas %}
+        <tr>
+          <td class="mono">{{ f.cuenta.codigo }}</td><td>{{ f.cuenta.nombre }}</td>
+          <td class="num">{{ f.debe_acumulado | moneda }}</td><td class="num">{{ f.haber_acumulado | moneda }}</td>
+          <td class="num">{{ f.saldo_deudor | moneda if f.saldo_deudor else '' }}</td>
+          <td class="num">{{ f.saldo_acreedor | moneda if f.saldo_acreedor else '' }}</td>
+          <td class="num">{{ f.activo | moneda if f.activo else '' }}</td>
+          <td class="num">{{ f.pasivo | moneda if f.pasivo else '' }}</td>
+          <td class="num">{{ f.perdida | moneda if f.perdida else '' }}</td>
+          <td class="num">{{ f.ganancia | moneda if f.ganancia else '' }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="10"><div class="vacio"><strong>Sin movimientos</strong>Registra asientos para ver el balance.</div></td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="2">Totales</td>
+        <td class="num">{{ totales.debe | moneda }}</td><td class="num">{{ totales.haber | moneda }}</td>
+        <td class="num">{{ totales.deudor | moneda }}</td><td class="num">{{ totales.acreedor | moneda }}</td>
+        <td class="num">{{ totales.activo | moneda }}</td><td class="num">{{ totales.pasivo | moneda }}</td>
+        <td class="num">{{ totales.perdida | moneda }}</td><td class="num">{{ totales.ganancia | moneda }}</td>
+      </tr>
+      <tr>
+        <td colspan="6">{{ 'Utilidad del ejercicio' if resultado >= 0 else 'Pérdida del ejercicio' }}</td>
+        <td class="num">{{ (resultado if resultado < 0 else 0) | abs | moneda }}</td>
+        <td class="num">{{ (resultado if resultado > 0 else 0) | moneda }}</td>
+        <td class="num">{{ (resultado if resultado > 0 else 0) | moneda }}</td>
+        <td class="num">{{ (resultado if resultado < 0 else 0) | abs | moneda }}</td>
+      </tr>
+      <tr>
+        <td colspan="6">Sumas iguales</td>
+        <td class="num">{{ (totales.activo + (0 if resultado > 0 else -resultado)) | moneda }}</td>
+        <td class="num">{{ (totales.pasivo + (resultado if resultado > 0 else 0)) | moneda }}</td>
+        <td class="num">{{ (totales.perdida + (resultado if resultado > 0 else 0)) | moneda }}</td>
+        <td class="num">{{ (totales.ganancia + (0 if resultado > 0 else -resultado)) | moneda }}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{% endblock %}

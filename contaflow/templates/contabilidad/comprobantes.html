@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block titulo %}Comprobantes{% endblock %}
+{% block contenido %}
+<h1>Comprobantes contables</h1>
+<p class="subtitulo">Libro diario detallado. Los asientos generados desde compras, ventas, remuneraciones y depreciación aparecen marcados con su origen.</p>
+
+<form class="filtros" method="get">
+  <div class="campo"><label>Desde</label><input type="date" name="desde" value="{{ desde }}"></div>
+  <div class="campo"><label>Hasta</label><input type="date" name="hasta" value="{{ hasta }}"></div>
+  <div class="campo"><label>Tipo</label>
+    <select name="tipo"><option value="">Todos</option>
+      {% for t in tipos %}<option value="{{ t.value }}" {% if tipo == t.value %}selected{% endif %}>{{ t.value | capitalize }}</option>{% endfor %}
+    </select></div>
+  <div class="campo"><label>Buscar en glosa</label><input name="texto" value="{{ texto }}"></div>
+  <button class="btn">Filtrar</button>
+  <a class="btn acento" href="/contabilidad/comprobantes/nuevo">Nuevo asiento</a>
+</form>
+
+<div class="panel tabla-scroll">
+  <table>
+    <thead><tr><th>Folio</th><th>Fecha</th><th>Tipo</th><th>Glosa</th><th>Origen</th><th class="num">Debe</th><th class="num">Haber</th><th>Estado</th></tr></thead>
+    <tbody>
+      {% for c in lista %}
+        <tr>
+          <td><a href="/contabilidad/comprobantes/{{ c.id }}" class="mono">{{ c.folio }}</a></td>
+          <td>{{ c.fecha | fecha }}</td>
+          <td>{{ c.tipo.value | capitalize }}</td>
+          <td>{{ c.glosa }}</td>
+          <td><span class="etiqueta-estado e-neutro">{{ c.origen.value | capitalize }}</span></td>
+          <td class="num">{{ c.total_debe | moneda }}</td>
+          <td class="num">{{ c.total_haber | moneda }}</td>
+          <td><span class="etiqueta-estado {{ 'e-ok' if c.estado.value == 'CONTABILIZADO' else ('e-error' if c.estado.value == 'ANULADO' else 'e-warn') }}">{{ c.estado.value | capitalize }}</span></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="8"><div class="vacio"><strong>Sin comprobantes en el rango</strong>Ajusta el filtro o crea un asiento nuevo.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

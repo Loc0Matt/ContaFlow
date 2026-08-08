@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block titulo %}Trabajadores{% endblock %}
+{% block contenido %}
+<h1>Trabajadores</h1>
+<p class="subtitulo">{{ lista | length }} registro(s) · {{ empresa.razon_social }}</p>
+
+<form class="filtros" method="get">
+  <div class="campo" style="min-width:240px"><label>Buscar</label><input name="texto" value="{{ texto }}" placeholder="Nombre o RUT"></div>
+  <button class="btn">Buscar</button>
+</form>
+
+<details class="plegable">
+  <summary>Agregar o modificar trabajador</summary>
+  <form method="post" action="/remuneraciones/trabajadores/guardar">
+    <input type="hidden" name="trabajador_id" id="trabajador_id">
+    <h3>Datos personales</h3>
+    <div class="campos">
+      <div class="campo"><label>RUT *</label><input name="rut" id="f_rut" required></div>
+      <div class="campo"><label>Nombres *</label><input name="nombres" id="f_nombres" required></div>
+      <div class="campo"><label>Apellidos *</label><input name="apellidos" id="f_apellidos" required></div>
+      <div class="campo"><label>Fecha nacimiento</label><input type="date" name="fecha_nacimiento" id="f_nac"></div>
+    </div>
+    <h3>Contrato</h3>
+    <div class="campos">
+      <div class="campo"><label>Cargo</label><input name="cargo" id="f_cargo"></div>
+      <div class="campo"><label>Fecha ingreso *</label><input type="date" name="fecha_ingreso" id="f_ingreso" value="{{ hoy() }}" required></div>
+      <div class="campo"><label>Fecha término</label><input type="date" name="fecha_termino" id="f_termino"></div>
+      <div class="campo"><label>Tipo de contrato</label>
+        <select name="tipo_contrato" id="f_contrato">{% for t in contratos %}<option value="{{ t.value }}">{{ t.value.replace('_',' ') | title }}</option>{% endfor %}</select></div>
+      <div class="campo"><label>Centro de costo</label>
+        <select name="centro_costo_id" id="f_cc"><option value="">—</option>
+          {% for c in centros %}<option value="{{ c.id }}">{{ c.codigo }} · {{ c.nombre }}</option>{% endfor %}</select></div>
+    </div>
+    <h3>Remuneración</h3>
+    <div class="campos">
+      <div class="campo"><label>Sueldo base *</label><input name="sueldo_base" id="f_sueldo" inputmode="numeric" value="0" required></div>
+      <div class="campo"><label>Colación mensual</label><input name="colacion" id="f_colacion" inputmode="numeric" value="0"></div>
+      <div class="campo"><label>Movilización mensual</label><input name="movilizacion" id="f_movil" inputmode="numeric" value="0"></div>
+      <div class="campo"><label>Cargas familiares</label><input name="cargas_familiares" id="f_cargas" value="0"></div>
+      <div class="campo"><label>Tramo asignación familiar</label>
+        <select name="tramo" id="f_tramo"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D" selected>D (sin derecho)</option></select></div>
+    </div>
+    <h3>Previsión</h3>
+    <div class="campos">
+      <div class="campo"><label>AFP</label>
+        <select name="afp_id" id="f_afp"><option value="">—</option>
+          {% for a in afps %}<option value="{{ a.id }}">{{ a.nombre }} ({{ a.tasa }}%)</option>{% endfor %}</select></div>
+      <div class="campo"><label>Sistema de salud</label>
+        <select name="salud_tipo" id="f_salud">{% for s in saludes %}<option value="{{ s.value }}">{{ s.value | capitalize }}</option>{% endfor %}</select></div>
+      <div class="campo"><label>Isapre</label><input name="isapre_nombre" id="f_isapre"></div>
+      <div class="campo"><label>Plan Isapre (UF)</label><input name="isapre_plan_uf" id="f_plan" value="0"></div>
+    </div>
+    <div class="campos">
+      <div class="checkbox"><input type="checkbox" name="gratificacion_legal" id="f_grat" checked><label for="f_grat" style="margin:0">Gratificación Art. 50 (25%, tope 4,75 IMM)</label></div>
+      <div class="checkbox"><input type="checkbox" name="afecto_afc" id="f_afc" checked><label for="f_afc" style="margin:0">Afecto a seguro de cesantía</label></div>
+      <div class="checkbox"><input type="checkbox" name="jubilado" id="f_jub"><label for="f_jub" style="margin:0">Jubilado (no cotiza AFP)</label></div>
+      <div class="checkbox"><input type="checkbox" name="activo" id="f_activo" checked><label for="f_activo" style="margin:0">Activo</label></div>
+    </div>
+    <h3>Pago</h3>
+    <div class="campos">
+      <div class="campo"><label>Banco</label><input name="banco" id="f_banco"></div>
+      <div class="campo"><label>N° de cuenta</label><input name="cuenta_banco" id="f_cuenta"></div>
+    </div>
+    <div class="acciones"><button class="btn">Guardar trabajador</button></div>
+  </form>
+</details>
+
+<div class="panel tabla-scroll">
+  <table>
+    <thead><tr><th>RUT</th><th>Nombre</th><th>Cargo</th><th>Ingreso</th><th>Contrato</th><th>AFP</th><th>Salud</th><th class="num">Sueldo base</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+      {% for t in lista %}
+        <tr>
+          <td class="mono">{{ t.rut | rut }}</td>
+          <td><strong>{{ t.nombre_completo }}</strong></td>
+          <td>{{ t.cargo or '—' }}</td>
+          <td>{{ t.fecha_ingreso | fecha }}</td>
+          <td>{{ t.tipo_contrato.value.replace('_',' ') | title }}</td>
+          <td>{{ t.afp.nombre if t.afp else '—' }}</td>
+          <td>{{ t.salud_tipo.value | capitalize }}</td>
+          <td class="num">{{ t.sueldo_base | moneda }}</td>
+          <td><span class="etiqueta-estado {{ 'e-ok' if t.activo else 'e-error' }}">{{ 'Activo' if t.activo else 'Inactivo' }}</span></td>
+          <td class="num no-imprimir">
+            <button class="btn sec mini" onclick='cargar({{ t.id }}, {{ t.rut | tojson }}, {{ t.nombres | tojson }}, {{ t.apellidos | tojson }}, {{ (t.cargo or "") | tojson }}, {{ t.fecha_ingreso.isoformat() | tojson }}, {{ t.tipo_contrato.value | tojson }}, {{ t.sueldo_base | float }}, {{ t.colacion | float }}, {{ t.movilizacion | float }}, {{ t.afp_id or "" | tojson }}, {{ t.salud_tipo.value | tojson }}, {{ t.isapre_plan_uf | float }}, {{ t.cargas_familiares }}, {{ t.asignacion_familiar_tramo | tojson }}, {{ t.gratificacion_legal | tojson }}, {{ t.afecto_afc | tojson }}, {{ t.jubilado | tojson }}, {{ t.activo | tojson }})'>Editar</button>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="10"><div class="vacio"><strong>Sin trabajadores</strong>Agrega el primero para poder liquidar sueldos.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function cargar(id, rut, nombres, apellidos, cargo, ingreso, contrato, sueldo, colacion, movil, afp, salud, plan, cargas, tramo, grat, afc, jub, activo) {
+  const v = (k, val) => document.getElementById(k).value = val;
+  const c = (k, val) => document.getElementById(k).checked = val;
+  document.getElementById('trabajador_id').value = id;
+  v('f_rut', rut); v('f_nombres', nombres); v('f_apellidos', apellidos); v('f_cargo', cargo);
+  v('f_ingreso', ingreso); v('f_contrato', contrato); v('f_sueldo', sueldo);
+  v('f_colacion', colacion); v('f_movil', movil); v('f_afp', afp); v('f_salud', salud);
+  v('f_plan', plan); v('f_cargas', cargas); v('f_tramo', tramo);
+  c('f_grat', grat); c('f_afc', afc); c('f_jub', jub); c('f_activo', activo);
+  document.querySelector('details.plegable').open = true;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+{% endblock %}

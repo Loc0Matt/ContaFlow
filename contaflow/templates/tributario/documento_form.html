@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block titulo %}Nuevo documento{% endblock %}
+{% block contenido %}
+{% set es_venta = clase.value == 'VENTA' %}
+<h1>Registrar {{ 'venta' if es_venta else 'compra' }}</h1>
+<p class="subtitulo">El IVA se calcula al 19% y el asiento contable se genera automáticamente al guardar.</p>
+
+<form method="post" action="/tributario/documentos/{{ ruta }}/guardar" id="form-doc">
+  <div class="panel">
+    <h3>Documento</h3>
+    <div class="campos">
+      <div class="campo"><label>Tipo de documento *</label>
+        <select name="tipo_dte" id="tipo_dte" required>
+          {% for t in tipos %}
+            <option value="{{ t.codigo }}" data-afecto="{{ 1 if t.afecto_iva else 0 }}" data-signo="{{ t.signo }}"
+              {% if t.codigo == (33 if es_venta else 33) %}selected{% endif %}>{{ t.codigo }} · {{ t.nombre }}</option>
+          {% endfor %}
+        </select></div>
+      <div class="campo"><label>Folio *</label><input name="folio" required></div>
+      <div class="campo"><label>Fecha emisión *</label><input type="date" name="fecha_emision" id="fecha_emision" value="{{ fecha_hoy }}" required></div>
+      <div class="campo"><label>Fecha vencimiento</label><input type="date" name="fecha_vencimiento"></div>
+      <div class="campo"><label>Período tributario</label>
+        <div style="display:flex;gap:6px">
+          <select name="periodo_mes">{% for n, nm in MESES %}<option value="{{ n }}" {% if n == mes %}selected{% endif %}>{{ nm }}</option>{% endfor %}</select>
+          <input name="periodo_anio" value="{{ anio }}" style="width:90px">
+        </div>
+        <div class="ayuda">Mes en que se declara en el F29.</div>
+      </div>
+      {% if not es_venta %}
+      <div class="campo"><label>Tipo de compra (registro SII)</label>
+        <select name="tipo_compra">
+          {% for tc in tipos_compra %}<option value="{{ tc.value }}">{{ tc.value.replace('_',' ') | title }}</option>{% endfor %}
+        </select>
+        <div class="ayuda">Determina si el IVA va a crédito fiscal, activo fijo o a gasto.</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>{{ 'Cliente' if es_venta else 'Proveedor' }}</h3>
+    <div class="campos">
+      <div class="campo"><label>RUT *</label>
+        <input name="entidad_rut" id="entidad_rut" list="lista-ruts" placeholder="76.123.456-7" required>
+        <div class="ayuda" id="aviso-rut"></div>
+        <datalist id="lista-ruts">
+          {% for e in entidades %}<option value="{{ e.rut }}">{{ e.razon_social }}</option>{% endfor %}
+        </datalist>
+      </div>
+      <div class="campo" style="grid-column:span 2"><label>Razón social *</label>
+        <input name="entidad_nombre" id="entidad_nombre" required>
+        <div class="ayuda">Si el RUT no existe, se crea automáticamente en el maestro.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Montos</h3>
+    <div class="campo" style="max-width:340px">
+      <label>Forma de ingreso</label>
+      <select name="modo_monto" id="modo_monto">
+        <option value="neto">Ingreso el NETO (facturas)</option>
+        <option value="total">Ingreso el TOTAL con IVA incluido (boletas)</option>
+      </select>
+    </div>
+    <div class="campos">
+      <div class="campo" id="campo-neto"><label>Neto afecto</label><input name="neto" id="neto" inputmode="numeric" value="0"></div>
+      <div class="campo" id="campo-total-bruto" style="display:none"><label>Total con IVA</label><input name="total_bruto" id="total_bruto" inputmode="numeric" value="0"></div>
+      <div class="campo"><label>Exento / no gravado</label><input name="exento" id="exento" inputmode="numeric" value="0"></div>
+      <div class="campo"><label>IVA (19%)</label><input name="iva" id="iva" inputmode="numeric" value="0">
+        <div class="ayuda">Se calcula solo; puedes ajustarlo por diferencias de redondeo.</div></div>
+      <div class="campo"><label>Impuesto adicional (ILA, etc.)</label><input name="impuesto_adicional" id="impuesto_adicional" inputmode="numeric" value="0"></div>
+      {% if not es_venta %}
+      <div class="campo"><label>IVA no recuperable</label><input name="iva_no_recuperable" id="iva_no_recuperable" inputmode="numeric" value="0"></div>
+      {% endif %}
+      <div class="campo"><label>Retención (cambio de sujeto)</label><input name="retencion" id="retencion" inputmode="numeric" value="0"></div>
+    </div>
+    <div class="kpi" style="margin-top:8px;max-width:280px">
+      <div class="etiqueta">Total del documento</div>
+      <div class="valor" id="total-calculado">$0</div>
+    </div>
+  </div>
+
+  <details class="plegable">
+    <summary>Referencia (para notas de crédito y débito)</summary>
+    <div class="campos">
+      <div class="campo"><label>Tipo doc. referenciado</label><input name="ref_tipo_dte" placeholder="33"></div>
+      <div class="campo"><label>Folio referenciado</label><input name="ref_folio"></div>
+      <div class="campo"><label>Fecha referencia</label><input type="date" name="ref_fecha"></div>
+      <div class="campo" style="grid-column:span 2"><label>Razón de la referencia</label><input name="ref_razon" placeholder="Anula factura / corrige monto"></div>
+    </div>
+  </details>
+
+  <details class="plegable">
+    <summary>Imputación contable (opcional — si se omite se usan las cuentas por defecto)</summary>
+    <div class="campos">
+      <div class="campo"><label>Contrapartida ({{ 'clientes / caja' if es_venta else 'proveedores / caja' }})</label>
+        <select name="cuenta_contrapartida"><option value="">Cuenta por defecto</option>
+          {% for c in cuentas %}<option value="{{ c.id }}">{{ c.codigo }} · {{ c.nombre }}</option>{% endfor %}
+        </select></div>
+      <div class="campo"><label>Cuenta de {{ 'ingreso' if es_venta else 'gasto / costo' }}</label>
+        <select name="cuenta_resultado"><option value="">Cuenta por defecto</option>
+          {% for c in cuentas %}<option value="{{ c.id }}">{{ c.codigo }} · {{ c.nombre }}</option>{% endfor %}
+        </select></div>
+      <div class="campo"><label>Centro de costo</label>
+        <select name="centro_costo"><option value="">—</option>
+          {% for c in centros %}<option value="{{ c.id }}">{{ c.codigo }} · {{ c.nombre }}</option>{% endfor %}
+        </select></div>
+    </div>
+    <div class="campo"><label>Observación</label><input name="observacion"></div>
+  </details>
+
+  <div class="panel">
+    <div class="checkbox">
+      <input type="checkbox" id="contabilizar" name="contabilizar" checked>
+      <label for="contabilizar" style="margin:0">Generar el asiento contable al guardar</label>
+    </div>
+  </div>
+
+  <div class="acciones">
+    <button class="btn">Guardar documento</button>
+    <a class="btn sec" href="/tributario/{{ ruta }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const TASA_IVA = 0.19;
+const $ = id => document.getElementById(id);
+const num = v => { const n = parseFloat(String(v || '').replace(/\./g, '').replace(',', '.')); return isNaN(n) ? 0 : n; };
+const fmt = n => '$' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+function afectoIVA() {
+  const op = $('tipo_dte').selectedOptions[0];
+  return op && op.dataset.afecto === '1';
+}
+
+function recalcular() {
+  const modoTotal = $('modo_monto').value === 'total';
+  $('campo-neto').style.display = modoTotal ? 'none' : '';
+  $('campo-total-bruto').style.display = modoTotal ? '' : 'none';
+
+  let neto, iva;
+  if (modoTotal && afectoIVA()) {
+    const total = num($('total_bruto').value);
+    neto = Math.round(total / (1 + TASA_IVA));
+    iva = total - neto;
+  } else {
+    neto = num($('neto').value);
+    iva = afectoIVA() ? Math.round(neto * TASA_IVA) : 0;
+  }
+  $('iva').value = iva;
+
+  const noRec = $('iva_no_recuperable') ? num($('iva_no_recuperable').value) : 0;
+  const total = neto + num($('exento').value) + iva + noRec
+              + num($('impuesto_adicional').value) - num($('retencion').value);
+  $('total-calculado').textContent = fmt(total);
+}
+
+// Validación de RUT con módulo 11, igual que la del servidor.
+function dvRut(cuerpo) {
+  let suma = 0, mult = 2;
+  for (let i = cuerpo.length - 1; i >= 0; i--) {
+    suma += parseInt(cuerpo[i], 10) * mult;
+    mult = mult === 7 ? 2 : mult + 1;
+  }
+  const resto = 11 - (suma % 11);
+  return resto === 11 ? '0' : resto === 10 ? 'K' : String(resto);
+}
+
+$('entidad_rut').addEventListener('blur', () => {
+  const limpio = $('entidad_rut').value.replace(/[^0-9kK]/g, '').toUpperCase();
+  const aviso = $('aviso-rut');
+  if (limpio.length < 2) { aviso.textContent = ''; return; }
+  const ok = dvRut(limpio.slice(0, -1)) === limpio.slice(-1);
+  aviso.textContent = ok ? '✓ RUT válido' : '✗ Dígito verificador incorrecto';
+  aviso.className = 'ayuda ' + (ok ? 'pos' : 'neg');
+
+  const opcion = [...document.querySelectorAll('#lista-ruts option')]
+    .find(o => o.value.replace(/[^0-9kK]/g, '').toUpperCase() === limpio);
+  if (opcion && !$('entidad_nombre').value) $('entidad_nombre').value = opcion.textContent;
+});
+
+['neto', 'exento', 'impuesto_adicional', 'retencion', 'total_bruto', 'iva_no_recuperable']
+  .forEach(id => $(id) && $(id).addEventListener('input', recalcular));
+$('modo_monto').addEventListener('change', recalcular);
+$('tipo_dte').addEventListener('change', recalcular);
+recalcular();
+</script>
+{% endblock %}

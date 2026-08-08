@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block titulo %}Libro Diario{% endblock %}
+{% block contenido %}
+<h1>Libro Diario</h1>
+<p class="subtitulo">{{ periodo_etiqueta(anio_activo, mes_activo) }} · {{ empresa.razon_social }}</p>
+
+<div class="acciones no-imprimir">
+  <a class="btn sec" href="/contabilidad/diario?formato=pdf{{ '&tipo=' ~ tipo if tipo }}">PDF</a>
+  <a class="btn sec" href="/contabilidad/diario?formato=xlsx{{ '&tipo=' ~ tipo if tipo }}">Excel</a>
+  <a class="btn sec" href="/contabilidad/diario?formato=csv{{ '&tipo=' ~ tipo if tipo }}">CSV</a>
+  <a class="btn sec" href="javascript:print()">Imprimir</a>
+</div>
+
+<div class="panel tabla-scroll">
+  <table>
+    <thead><tr><th>Fecha</th><th>Comprobante</th><th>Cuenta</th><th>Glosa</th><th class="num">Debe</th><th class="num">Haber</th></tr></thead>
+    <tbody>
+      {% for c in comprobantes %}
+        <tr class="grupo"><td colspan="6">{{ c.fecha | fecha }} · {{ c.folio }} · {{ c.glosa }}</td></tr>
+        {% for m in c.lineas %}
+          <tr>
+            <td></td><td></td>
+            <td class="mono">{{ m.cuenta.codigo }} {{ m.cuenta.nombre }}</td>
+            <td>{{ m.glosa or '' }}</td>
+            <td class="num">{{ m.debe | moneda if m.debe else '' }}</td>
+            <td class="num">{{ m.haber | moneda if m.haber else '' }}</td>
+          </tr>
+        {% endfor %}
+      {% else %}
+        <tr><td colspan="6"><div class="vacio"><strong>Sin movimientos</strong>No hay asientos contabilizados en {{ periodo_etiqueta(anio_activo, mes_activo) }}.</div></td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot><tr><td colspan="4">Totales del período</td>
+      <td class="num">{{ total_debe | moneda }}</td><td class="num">{{ total_haber | moneda }}</td></tr></tfoot>
+  </table>
+</div>
+{% endblock %}

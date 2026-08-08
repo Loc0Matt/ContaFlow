@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block titulo %}Períodos{% endblock %}
+{% block contenido %}
+<h1>Períodos contables y cierre de ejercicio</h1>
+<p class="subtitulo">Al cerrar un mes se bloquea el registro y la modificación de asientos con fecha en ese período.</p>
+
+<form class="filtros" method="get">
+  <div class="campo"><label>Año</label>
+    <select name="anio" onchange="this.form.submit()">
+      {% for a in range(hoy().year - 6, hoy().year + 2) %}<option value="{{ a }}" {% if a == anio %}selected{% endif %}>{{ a }}</option>{% endfor %}
+    </select></div>
+</form>
+
+<div class="panel">
+  <table>
+    <thead><tr><th>Mes</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+      {% for numero, nombre in MESES %}
+        {% set p = periodos.get(numero) %}
+        {% set cerrado = p and p.estado.value == 'CERRADO' %}
+        <tr>
+          <td>{{ nombre }} {{ anio }}</td>
+          <td><span class="etiqueta-estado {{ 'e-error' if cerrado else 'e-ok' }}">{{ 'Cerrado' if cerrado else 'Abierto' }}</span></td>
+          <td class="num">
+            <form method="post" action="/contabilidad/periodos/cambiar" style="display:inline">
+              <input type="hidden" name="anio" value="{{ anio }}"><input type="hidden" name="mes" value="{{ numero }}">
+              <button class="btn sec mini">{{ 'Reabrir' if cerrado else 'Cerrar' }}</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <h3>Cierre del ejercicio {{ anio }}</h3>
+  <p class="ayuda">Traspasa el saldo de todas las cuentas de resultado a
+    <strong>{{ cuenta_resultado.codigo ~ ' · ' ~ cuenta_resultado.nombre if cuenta_resultado else 'la cuenta configurada' }}</strong>,
+    dejando el estado de resultados en cero al 31 de diciembre.</p>
+  {% if not cuenta_resultado %}
+    <div class="aviso warn">Configura primero la cuenta «Resultado del ejercicio» en Configuración → Cuentas por defecto.</div>
+  {% else %}
+    <form method="post" action="/contabilidad/cierre-ejercicio"
+          onsubmit="return confirm('¿Generar el asiento de cierre del ejercicio {{ anio }}?')">
+      <input type="hidden" name="anio" value="{{ anio }}">
+      <button class="btn peligro">Generar asiento de cierre {{ anio }}</button>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

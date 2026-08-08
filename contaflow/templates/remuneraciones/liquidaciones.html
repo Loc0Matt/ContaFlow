@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block titulo %}Liquidaciones{% endblock %}
+{% block contenido %}
+<h1>Liquidaciones de sueldo</h1>
+<p class="subtitulo">{{ periodo_etiqueta(anio_activo, mes_activo) }} · {{ trabajadores | length }} trabajador(es) activo(s)</p>
+
+<div class="rejilla c4">
+  <div class="kpi"><div class="etiqueta">Total imponible</div><div class="valor">{{ totales.imponible | moneda }}</div></div>
+  <div class="kpi"><div class="etiqueta">Total haberes</div><div class="valor">{{ totales.haberes | moneda }}</div></div>
+  <div class="kpi"><div class="etiqueta">Líquido a pagar</div><div class="valor">{{ totales.liquido | moneda }}</div></div>
+  <div class="kpi"><div class="etiqueta">Costo empresa</div><div class="valor">{{ totales.costo | moneda }}</div></div>
+</div>
+
+<details class="plegable" open>
+  <summary>Calcular liquidación individual</summary>
+  <form method="post" action="/remuneraciones/liquidaciones/calcular">
+    <div class="campos">
+      <div class="campo" style="grid-column:span 2"><label>Trabajador *</label>
+        <select name="trabajador_id" required>
+          {% for t in trabajadores %}<option value="{{ t.id }}">{{ t.nombre_completo }} ({{ t.rut }})</option>{% endfor %}
+        </select></div>
+      <div class="campo"><label>Días trabajados</label><input name="dias_trabajados" value="30"></div>
+      <div class="campo"><label>Horas extra ($)</label><input name="horas_extra" value="0"></div>
+      <div class="campo"><label>Bonos ($)</label><input name="bonos" value="0"></div>
+      <div class="campo"><label>Comisiones ($)</label><input name="comisiones" value="0"></div>
+      <div class="campo"><label>Otros no imponibles</label><input name="otros_no_imponibles" value="0"></div>
+      <div class="campo"><label>Anticipos</label><input name="anticipos" value="0"></div>
+      <div class="campo"><label>Otros descuentos</label><input name="otros_descuentos" value="0"></div>
+    </div>
+    <div class="acciones">
+      <button class="btn">Calcular y guardar</button>
+    </div>
+  </form>
+</details>
+
+<div class="acciones">
+  <form method="post" action="/remuneraciones/liquidaciones/calcular-todos" style="display:inline"
+        onsubmit="return confirm('Se calcularán las liquidaciones de todos los trabajadores activos con sus datos base. ¿Continuar?')">
+    <button class="btn acento">Calcular todos con datos base</button>
+  </form>
+  <a class="btn sec" href="/remuneraciones/libro">Ver libro de remuneraciones</a>
+</div>
+
+<div class="panel tabla-scroll">
+  <table>
+    <thead><tr><th>Trabajador</th><th class="num">Días</th><th class="num">Imponible</th><th class="num">Haberes</th><th class="num">AFP</th><th class="num">Salud</th><th class="num">AFC</th><th class="num">Imp. único</th><th class="num">Líquido</th><th></th></tr></thead>
+    <tbody>
+      {% for liq in lista %}
+        <tr>
+          <td>{{ liq.trabajador.nombre_completo }}<div class="ayuda mono">{{ liq.trabajador.rut | rut }}</div></td>
+          <td class="num">{{ liq.dias_trabajados }}</td>
+          <td class="num">{{ liq.total_imponible | moneda }}</td>
+          <td class="num">{{ liq.total_haberes | moneda }}</td>
+          <td class="num">{{ liq.afp_monto | moneda }}</td>
+          <td class="num">{{ (liq.salud_monto + liq.salud_adicional) | moneda }}</td>
+          <td class="num">{{ liq.afc_monto | moneda }}</td>
+          <td class="num">{{ liq.impuesto_unico | moneda }}</td>
+          <td class="num"><strong>{{ liq.liquido | moneda }}</strong></td>
+          <td class="num no-imprimir">
+            <a class="btn sec mini" href="/remuneraciones/liquidaciones/{{ liq.id }}">Ver</a>
+            <a class="btn sec mini" href="/remuneraciones/liquidaciones/{{ liq.id }}?formato=pdf">PDF</a>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="10"><div class="vacio"><strong>Sin liquidaciones en el período</strong>
+          Recuerda cargar la UF, UTM e ingreso mínimo del mes en Maestros → Indicadores.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

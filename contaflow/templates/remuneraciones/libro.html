@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block titulo %}Libro de remuneraciones{% endblock %}
+{% block contenido %}
+<h1>Libro de Remuneraciones</h1>
+<p class="subtitulo">{{ periodo_etiqueta(anio_activo, mes_activo) }} · {{ empresa.razon_social }}</p>
+
+<div class="acciones no-imprimir">
+  <a class="btn sec" href="/remuneraciones/libro?formato=xlsx">Excel</a>
+  <a class="btn sec" href="/remuneraciones/libro?formato=csv">CSV</a>
+  <a class="btn sec" href="/remuneraciones/libro?formato=pdf">PDF</a>
+  <form method="post" action="/remuneraciones/centralizar" style="display:inline"
+        onsubmit="return confirm('Se generará el asiento contable de remuneraciones del mes. ¿Continuar?')">
+    <button class="btn acento">Centralizar en contabilidad</button>
+  </form>
+</div>
+
+<div class="panel tabla-scroll">
+  <table>
+    <thead><tr>
+      <th>RUT</th><th>Nombre</th><th class="num">Días</th><th class="num">Base</th><th class="num">Gratif.</th>
+      <th class="num">Imponible</th><th class="num">No imp.</th><th class="num">Haberes</th>
+      <th class="num">AFP</th><th class="num">Salud</th><th class="num">AFC</th><th class="num">Imp. único</th>
+      <th class="num">Descuentos</th><th class="num">Líquido</th><th class="num">Costo empresa</th>
+    </tr></thead>
+    <tbody>
+      {% for l in lista %}
+        <tr>
+          <td class="mono">{{ l.trabajador.rut | rut }}</td>
+          <td>{{ l.trabajador.nombre_completo }}</td>
+          <td class="num">{{ l.dias_trabajados }}</td>
+          <td class="num">{{ l.sueldo_base | moneda }}</td>
+          <td class="num">{{ l.gratificacion | moneda }}</td>
+          <td class="num">{{ l.total_imponible | moneda }}</td>
+          <td class="num">{{ l.total_no_imponible | moneda }}</td>
+          <td class="num">{{ l.total_haberes | moneda }}</td>
+          <td class="num">{{ l.afp_monto | moneda }}</td>
+          <td class="num">{{ (l.salud_monto + l.salud_adicional) | moneda }}</td>
+          <td class="num">{{ l.afc_monto | moneda }}</td>
+          <td class="num">{{ l.impuesto_unico | moneda }}</td>
+          <td class="num">{{ l.total_descuentos | moneda }}</td>
+          <td class="num"><strong>{{ l.liquido | moneda }}</strong></td>
+          <td class="num">{{ l.costo_empresa | moneda }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="15"><div class="vacio">Sin liquidaciones calculadas en el período.</div></td></tr>
+      {% endfor %}
+    </tbody>
+    {% if lista %}
+    <tfoot><tr>
+      <td colspan="3">Totales</td>
+      <td class="num">{{ lista | sum(attribute='sueldo_base') | moneda }}</td>
+      <td class="num">{{ lista | sum(attribute='gratificacion') | moneda }}</td>
+      <td class="num">{{ lista | sum(attribute='total_imponible') | moneda }}</td>
+      <td class="num">{{ lista | sum(attribute='total_no_imponible') | moneda }}</td>
+      <td class="num">{{ lista | sum(attribute='total_haberes') | moneda }}</td>
+      <td class="num">{{ lista | sum(attribute='afp_monto') | moneda }}</td>
+      <td class="num">{{ lista | sum(attribute='salud_monto') | moneda }}</td>
+      <td class="num">{{ lista | sum(attribute='afc_monto') | moneda }}</td>
+      <td class="num">{{ lista | sum(attribute='impuesto_unico') | moneda }}</td>
+      <td class="num">{{ lista | sum(attribute='total_descuentos') | moneda }}</td>
+      <td class="num">{{ lista | sum(attribute='liquido') | moneda }}</td>
+      <td class="num">{{ lista | sum(attribute='costo_empresa') | moneda }}</td>
+    </tr></tfoot>
+    {% endif %}
+  </table>
+</div>
+{% endblock %}

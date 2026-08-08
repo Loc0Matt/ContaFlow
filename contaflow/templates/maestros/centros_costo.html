@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block titulo %}Centros de costo{% endblock %}
+{% block contenido %}
+<h1>Centros de costo</h1>
+<p class="subtitulo">Permiten repartir ingresos y gastos por área, sucursal o proyecto.</p>
+
+<div class="panel">
+  <form method="post" action="/maestros/centros-costo/guardar">
+    <div class="campos">
+      <div class="campo"><label>Código *</label><input name="codigo" required placeholder="ADM"></div>
+      <div class="campo" style="grid-column:span 2"><label>Nombre *</label><input name="nombre" required placeholder="Administración"></div>
+    </div>
+    <div class="acciones"><button class="btn">Agregar centro de costo</button></div>
+  </form>
+</div>
+
+<div class="panel">
+  <table>
+    <thead><tr><th>Código</th><th>Nombre</th><th>Estado</th></tr></thead>
+    <tbody>
+      {% for c in lista %}
+        <tr><td class="mono">{{ c.codigo }}</td><td>{{ c.nombre }}</td>
+            <td><span class="etiqueta-estado {{ 'e-ok' if c.activo else 'e-error' }}">{{ 'Activo' if c.activo else 'Inactivo' }}</span></td></tr>
+      {% else %}
+        <tr><td colspan="3"><div class="vacio">Sin centros de costo.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

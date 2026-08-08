@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block titulo %}Cuentas por defecto{% endblock %}
+{% block contenido %}
+<h1>Cuentas contables por defecto</h1>
+<p class="subtitulo">Definen cómo se arman los asientos automáticos de compras, ventas, honorarios, remuneraciones y depreciación.</p>
+
+<form method="post" action="/configuracion/cuentas/guardar">
+  <div class="panel tabla-scroll">
+    <table>
+      <thead><tr><th style="width:230px">Concepto</th><th>Cuenta asignada</th></tr></thead>
+      <tbody>
+        {% for clave, valores in claves.items() %}
+          <tr>
+            <td>{{ valores[1] }}<div class="ayuda mono">{{ clave }}</div></td>
+            <td>
+              <select name="{{ clave }}">
+                <option value="">— Sin asignar —</option>
+                {% for c in cuentas %}
+                  <option value="{{ c.id }}" {% if parametros.get(clave) and parametros[clave].valor == (c.id | string) %}selected{% endif %}>{{ c.codigo }} · {{ c.nombre }}</option>
+                {% endfor %}
+              </select>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="acciones"><button class="btn">Guardar configuración</button></div>
+</form>
+{% endblock %}

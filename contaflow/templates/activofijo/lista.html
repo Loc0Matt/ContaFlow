@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block titulo %}Activo fijo{% endblock %}
+{% block contenido %}
+<h1>Activo fijo y depreciación</h1>
+<p class="subtitulo">Situación al {{ periodo_etiqueta(anio_activo, mes_activo) }} · depreciación lineal mensual</p>
+
+<div class="rejilla c4">
+  <div class="kpi"><div class="etiqueta">Costo de adquisición</div><div class="valor">{{ totales.costo | moneda }}</div></div>
+  <div class="kpi"><div class="etiqueta">Depreciación del mes</div><div class="valor">{{ totales.mes | moneda }}</div></div>
+  <div class="kpi"><div class="etiqueta">Depreciación acumulada</div><div class="valor">{{ totales.acumulada | moneda }}</div></div>
+  <div class="kpi"><div class="etiqueta">Valor libro</div><div class="valor">{{ totales.libro | moneda }}</div></div>
+</div>
+
+<div class="acciones no-imprimir">
+  <form method="post" action="/activo-fijo/depreciar" style="display:inline"
+        onsubmit="return confirm('Se calculará y contabilizará la depreciación de {{ periodo_etiqueta(anio_activo, mes_activo) }}. ¿Continuar?')">
+    <button class="btn acento">Contabilizar depreciación del mes</button>
+  </form>
+  <a class="btn sec" href="/activo-fijo?formato=xlsx">Excel</a>
+  <a class="btn sec" href="/activo-fijo?formato=csv">CSV</a>
+  <a class="btn sec" href="/activo-fijo?formato=pdf">PDF</a>
+</div>
+
+<details class="plegable">
+  <summary>Agregar o modificar activo</summary>
+  <form method="post" action="/activo-fijo/guardar">
+    <input type="hidden" name="activo_id" id="activo_id">
+    <div class="campos">
+      <div class="campo"><label>Código *</label><input name="codigo" id="f_codigo" required placeholder="AF-001"></div>
+      <div class="campo" style="grid-column:span 2"><label>Nombre *</label><input name="nombre" id="f_nombre" required></div>
+      <div class="campo"><label>Categoría</label>
+        <input name="categoria" id="f_categoria" list="lista-categorias">
+        <datalist id="lista-categorias">
+          {% for nombre, anios in vidas_utiles %}<option value="{{ nombre }}">{{ anios }} años</option>{% endfor %}
+        </datalist></div>
+      <div class="campo"><label>Fecha adquisición *</label><input type="date" name="fecha_adquisicion" id="f_fecha" value="{{ hoy() }}" required></div>
+      <div class="campo"><label>Valor de adquisición *</label><input name="valor_adquisicion" id="f_valor" inputmode="numeric" value="0" required></div>
+      <div class="campo"><label>Valor residual</label><input name="valor_residual" id="f_residual" inputmode="numeric" value="0"></div>
+      <div class="campo"><label>Vida útil (meses) *</label>
+        <input name="vida_util_meses" id="f_vida" value="84" required>
+        <div class="ayuda">Tabla SII: computadores 72, muebles 84, vehículos 84, maquinarias 180.</div></div>
+    </div>
+    <div class="checkbox"><input type="checkbox" name="usa_acelerada" id="f_acel">
+      <label for="f_acel" style="margin:0">Depreciación acelerada (vida útil ÷ 3, mínimo 12 meses)</label></div>
+    <div class="campos">
+      <div class="campo"><label>Cuenta del activo</label>
+        <select name="cuenta_activo_id" id="f_cta_activo"><option value="">Por defecto</option>
+          {% for c in cuentas %}<option value="{{ c.id }}">{{ c.codigo }} · {{ c.nombre }}</option>{% endfor %}</select></div>
+      <div class="campo"><label>Depreciación acumulada</label>
+        <select name="cuenta_depreciacion_id" id="f_cta_dep"><option value="">Por defecto</option>
+          {% for c in cuentas %}<option value="{{ c.id }}">{{ c.codigo }} · {{ c.nombre }}</option>{% endfor %}</select></div>
+      <div class="campo"><label>Centro de costo</label>
+        <select name="centro_costo_id"><option value="">—</option>
+          {% for c in centros %}<option value="{{ c.id }}">{{ c.codigo }} · {{ c.nombre }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="campo"><label>Observación</label><input name="observacion"></div>
+    <div class="acciones"><button class="btn">Guardar activo</button></div>
+  </form>
+</details>
+
+<div class="panel tabla-scroll">
+  <table>
+    <thead><tr><th>Código</th><th>Nombre</th><th>Adquisición</th><th class="num">Costo</th><th class="num">Vida útil</th>
+      <th class="num">Dep. mes</th><th class="num">Dep. acumulada</th><th class="num">Valor libro</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+      {% for f in filas %}
+        {% set a = f.activo %}
+        <tr {% if a.dado_de_baja %}style="opacity:.55"{% endif %}>
+          <td class="mono">{{ a.codigo }}</td>
+          <td>{{ a.nombre }}{% if a.categoria %}<div class="ayuda">{{ a.categoria }}</div>{% endif %}</td>
+          <td>{{ a.fecha_adquisicion | fecha }}</td>
+          <td class="num">{{ f.costo | moneda }}</td>
+          <td class="num">{{ f.vida_util }} m{% if a.usa_acelerada %} <span class="etiqueta-estado e-warn">Acel.</span>{% endif %}</td>
+          <td class="num">{{ f.depreciacion_mes | moneda }}</td>
+          <td class="num">{{ f.depreciacion_acumulada | moneda }}</td>
+          <td class="num"><strong>{{ f.valor_libro | moneda }}</strong></td>
+          <td>{% if a.dado_de_baja %}<span class="etiqueta-estado e-error">Baja {{ a.fecha_baja | fecha }}</span>
+              {% else %}<span class="etiqueta-estado e-ok">Vigente</span>{% endif %}</td>
+          <td class="num no-imprimir">
+            <a class="btn sec mini" href="/activo-fijo/{{ a.id }}/calendario">Tabla</a>
+            {% if not a.dado_de_baja %}
+              <button class="btn sec mini" onclick="document.getElementById('baja-{{ a.id }}').style.display='block'">Baja</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% if not a.dado_de_baja %}
+        <tr id="baja-{{ a.id }}" style="display:none" class="no-imprimir">
+          <td colspan="10">
+            <form method="post" action="/activo-fijo/{{ a.id }}/baja" class="filtros" style="margin:0"
+                  onsubmit="return confirm('¿Dar de baja {{ a.codigo }}?')">
+              <div class="campo"><label>Fecha de baja</label><input type="date" name="fecha" value="{{ hoy() }}"></div>
+              <div class="campo"><label>Valor de venta (0 si es desecho)</label><input name="valor_venta" value="0"></div>
+              <button class="btn peligro">Confirmar baja</button>
+            </form>
+          </td>
+        </tr>
+        {% endif %}
+      {% else %}
+        <tr><td colspan="10"><div class="vacio"><strong>Sin activos registrados</strong>Agrega el primero para calcular su depreciación.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

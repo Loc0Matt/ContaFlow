@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block titulo %}Finiquito{% endblock %}
+{% block contenido %}
+<h1>Calculadora de finiquito</h1>
+<p class="subtitulo">Cálculo referencial: indemnización por años de servicio (tope 11 años), mes de aviso previo y feriado proporcional.</p>
+
+<form class="filtros" method="get">
+  <div class="campo" style="min-width:280px"><label>Trabajador</label>
+    <select name="trabajador_id"><option value="">— Seleccionar —</option>
+      {% for t in trabajadores %}<option value="{{ t.id }}" {% if trabajador and t.id == trabajador.id %}selected{% endif %}>{{ t.nombre_completo }}</option>{% endfor %}
+    </select></div>
+  <div class="campo"><label>Fecha de término</label><input type="date" name="fecha_termino" value="{{ fecha_termino }}"></div>
+  <div class="campo"><label>Última remuneración</label><input name="ultima_remuneracion" value="{{ ultima_remuneracion }}" placeholder="Sueldo base"></div>
+  <div class="campo"><label>Días de vacaciones pendientes</label><input name="dias_vacaciones" value="{{ dias_vacaciones }}" placeholder="0"></div>
+  <div class="checkbox"><input type="checkbox" name="con_indemnizacion" {% if con_indemnizacion == 'on' %}checked{% endif %}>
+    <label style="margin:0">Causal con indemnización (necesidades de la empresa)</label></div>
+  <button class="btn">Calcular</button>
+</form>
+
+{% if resultado %}
+<div class="panel">
+  <h3>{{ trabajador.nombre_completo }} · {{ trabajador.rut | rut }}</h3>
+  <table>
+    <tbody>
+      <tr><td>Meses de servicio</td><td class="num">{{ resultado.meses_servicio }}</td></tr>
+      <tr><td>Años indemnizables (tope 11)</td><td class="num">{{ resultado.anios_indemnizables }}</td></tr>
+      <tr><td>Indemnización por años de servicio</td><td class="num">{{ resultado.indemnizacion_anios_servicio | moneda }}</td></tr>
+      <tr><td>Indemnización sustitutiva del aviso previo</td><td class="num">{{ resultado.indemnizacion_aviso_previo | moneda }}</td></tr>
+      <tr><td>Feriado proporcional</td><td class="num">{{ resultado.feriado_proporcional | moneda }}</td></tr>
+    </tbody>
+    <tfoot><tr><td>TOTAL FINIQUITO</td><td class="num">{{ resultado.total | moneda }}</td></tr></tfoot>
+  </table>
+  <div class="aviso warn" style="margin-top:12px">
+    Cálculo referencial. No incluye remuneraciones pendientes del mes, bonos proporcionales ni
+    descuentos previsionales sobre el feriado. Revísalo antes de firmar el finiquito.
+  </div>
+</div>
+{% endif %}
+{% endblock %}

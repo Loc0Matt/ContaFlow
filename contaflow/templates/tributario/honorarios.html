@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block titulo %}Honorarios{% endblock %}
+{% block contenido %}
+<h1>Boletas de honorarios</h1>
+<p class="subtitulo">{{ periodo_etiqueta(anio_activo, mes_activo) }} · Retención vigente {{ (tasa * 100) | round(2) }}%</p>
+
+<div class="rejilla c3">
+  <div class="kpi"><div class="etiqueta">Honorarios brutos</div><div class="valor">{{ total_bruto | moneda }}</div></div>
+  <div class="kpi"><div class="etiqueta">Retención (cód. 151 del F29)</div><div class="valor">{{ total_retencion | moneda }}</div></div>
+  <div class="kpi"><div class="etiqueta">Líquido pagado</div><div class="valor">{{ (total_bruto - total_retencion) | moneda }}</div></div>
+</div>
+
+<details class="plegable" open>
+  <summary>Registrar boleta</summary>
+  <form method="post" action="/tributario/honorarios/guardar">
+    <div class="campos">
+      <div class="campo"><label>Tipo</label>
+        <select name="tipo">
+          <option value="RECIBIDA">Recibida (la empresa retiene)</option>
+          <option value="EMITIDA">Emitida (nos retienen a nosotros)</option>
+        </select></div>
+      <div class="campo"><label>N° boleta *</label><input name="numero" required></div>
+      <div class="campo"><label>Fecha *</label><input type="date" name="fecha" value="{{ hoy() }}" required></div>
+      <div class="campo"><label>RUT profesional *</label><input name="entidad_rut" required placeholder="12.345.678-9"></div>
+      <div class="campo"><label>Nombre *</label><input name="entidad_nombre" required></div>
+      <div class="campo"><label>Monto bruto *</label><input name="bruto" id="bruto" inputmode="numeric" required value="0"></div>
+      <div class="campo"><label>Tasa retención (%)</label><input name="tasa" id="tasa" value="{{ (tasa * 100) | round(2) }}"></div>
+      <div class="campo"><label>Retención calculada</label><input id="retencion_calc" readonly></div>
+      <div class="campo"><label>Líquido a pagar</label><input id="liquido_calc" readonly></div>
+      <div class="campo"><label>Cuenta de gasto</label>
+        <select name="cuenta_gasto"><option value="">Honorarios profesionales (por defecto)</option>
+          {% for c in cuentas %}<option value="{{ c.id }}">{{ c.codigo }} · {{ c.nombre }}</option>{% endfor %}
+        </select></div>
+      <div class="campo" style="grid-column:span 2"><label>Glosa</label><input name="glosa"></div>
+    </div>
+    <div class="acciones"><button class="btn">Guardar y contabilizar</button></div>
+  </form>
+</details>
+
+<div class="panel tabla-scroll">
+  <table>
+    <thead><tr><th>N°</th><th>Fecha</th><th>Tipo</th><th>RUT</th><th>Profesional</th><th class="num">Bruto</th><th class="num">Retención</th><th class="num">Líquido</th><th>Asiento</th><th></th></tr></thead>
+    <tbody>
+      {% for h in lista %}
+        <tr {% if h.anulado %}style="opacity:.5;text-decoration:line-through"{% endif %}>
+          <td class="mono">{{ h.numero }}</td><td>{{ h.fecha | fecha }}</td><td>{{ h.tipo | capitalize }}</td>
+          <td class="mono">{{ h.entidad_rut | rut }}</td><td>{{ h.entidad_nombre }}</td>
+          <td class="num">{{ h.bruto | moneda }}</td><td class="num">{{ h.retencion | moneda }}</td>
+          <td class="num">{{ h.liquido | moneda }}</td>
+          <td>{% if h.comprobante_id %}<a href="/contabilidad/comprobantes/{{ h.comprobante_id }}">Ver</a>{% else %}—{% endif %}</td>
+          <td class="num no-imprimir">
+            {% if not h.anulado %}
+            <form method="post" action="/tributario/honorarios/{{ h.id }}/anular" onsubmit="return confirm('¿Anular esta boleta?')">
+              <button class="btn sec mini">Anular</button></form>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="10"><div class="vacio">Sin boletas de honorarios en el período.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const num = v => { const n = parseFloat(String(v || '').replace(/\./g, '').replace(',', '.')); return isNaN(n) ? 0 : n; };
+const fmt = n => '$' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+function calcular() {
+  const bruto = num(document.getElementById('bruto').value);
+  const tasa = num(document.getElementById('tasa').value) / 100;
+  const ret = Math.round(bruto * tasa);
+  document.getElementById('retencion_calc').value = fmt(ret);
+  document.getElementById('liquido_calc').value = fmt(bruto - ret);
+}
+['bruto', 'tasa'].forEach(id => document.getElementById(id).addEventListener('input', calcular));
+calcular();
+</script>
+{% endblock %}

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}{{ APP_NAME }}{% endblock %} · {{ APP_NAME }}</title>
+  <link rel="stylesheet" href="/static/estilos.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%231f3864'/><text y='68' x='50' text-anchor='middle' font-size='54' fill='white' font-family='Arial' font-weight='bold'>C</text></svg>">
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar">
+    <div class="marca">{{ APP_NAME }}<span>Contabilidad chilena v{{ APP_VERSION }}</span></div>
+
+    <a href="/" class="{{ 'activo' if request.url.path == '/' }}">Panel</a>
+
+    <h4>Tributario</h4>
+    <a href="/tributario/ventas" class="{{ 'activo' if '/tributario/ventas' in request.url.path }}">Ventas</a>
+    <a href="/tributario/compras" class="{{ 'activo' if '/tributario/compras' in request.url.path }}">Compras</a>
+    <a href="/tributario/honorarios" class="{{ 'activo' if '/honorarios' in request.url.path }}">Honorarios</a>
+    <a href="/tributario/f29" class="{{ 'activo' if '/f29' in request.url.path }}">Formulario 29</a>
+    <a href="/tributario/f22" class="{{ 'activo' if '/f22' in request.url.path }}">Formulario 22</a>
+
+    <h4>Contabilidad</h4>
+    <a href="/contabilidad/comprobantes" class="{{ 'activo' if '/comprobantes' in request.url.path }}">Comprobantes</a>
+    <a href="/contabilidad/diario" class="{{ 'activo' if '/diario' in request.url.path }}">Libro Diario</a>
+    <a href="/contabilidad/mayor" class="{{ 'activo' if '/mayor' in request.url.path }}">Libro Mayor</a>
+    <a href="/contabilidad/balance" class="{{ 'activo' if request.url.path == '/contabilidad/balance' }}">Balance 8 columnas</a>
+    <a href="/contabilidad/conciliacion" class="{{ 'activo' if '/conciliacion' in request.url.path }}">Conciliación bancaria</a>
+    <a href="/contabilidad/periodos" class="{{ 'activo' if '/periodos' in request.url.path }}">Períodos y cierre</a>
+
+    <h4>Informes</h4>
+    <a href="/informes/resultados" class="{{ 'activo' if '/resultados' in request.url.path }}">Estado de Resultados</a>
+    <a href="/informes/balance-general" class="{{ 'activo' if '/balance-general' in request.url.path }}">Situación Financiera</a>
+    <a href="/informes/analisis" class="{{ 'activo' if '/analisis' in request.url.path }}">Análisis de cuentas</a>
+
+    <h4>Remuneraciones</h4>
+    <a href="/remuneraciones/trabajadores" class="{{ 'activo' if '/trabajadores' in request.url.path }}">Trabajadores</a>
+    <a href="/remuneraciones/liquidaciones" class="{{ 'activo' if '/liquidaciones' in request.url.path }}">Liquidaciones</a>
+    <a href="/remuneraciones/libro" class="{{ 'activo' if '/remuneraciones/libro' in request.url.path }}">Libro de remuneraciones</a>
+    <a href="/remuneraciones/finiquito" class="{{ 'activo' if '/finiquito' in request.url.path }}">Finiquitos</a>
+
+    <h4>Maestros</h4>
+    <a href="/activo-fijo" class="{{ 'activo' if '/activo-fijo' in request.url.path }}">Activo fijo</a>
+    <a href="/maestros/cuentas" class="{{ 'activo' if '/maestros/cuentas' in request.url.path }}">Plan de cuentas</a>
+    <a href="/maestros/entidades" class="{{ 'activo' if '/entidades' in request.url.path }}">Clientes y proveedores</a>
+    <a href="/maestros/centros-costo" class="{{ 'activo' if '/centros-costo' in request.url.path }}">Centros de costo</a>
+    <a href="/maestros/indicadores" class="{{ 'activo' if '/indicadores' in request.url.path }}">Indicadores (UF/UTM)</a>
+
+    <h4>Sistema</h4>
+    <a href="/empresas" class="{{ 'activo' if '/empresas' in request.url.path }}">Empresas</a>
+    <a href="/configuracion/cuentas" class="{{ 'activo' if '/configuracion/cuentas' in request.url.path }}">Cuentas por defecto</a>
+    <a href="/configuracion/parametros" class="{{ 'activo' if '/parametros' in request.url.path }}">Parámetros</a>
+    <a href="/configuracion/usuarios" class="{{ 'activo' if '/usuarios' in request.url.path }}">Usuarios</a>
+    <a href="/configuracion/respaldos" class="{{ 'activo' if '/respaldos' in request.url.path }}">Respaldos</a>
+  </nav>
+
+  <div class="principal">
+    <header class="topbar">
+      <form method="post" action="/seleccionar-empresa">
+        <label for="empresa_id" style="margin:0">Empresa</label>
+        <select name="empresa_id" id="empresa_id" onchange="this.form.submit()" style="min-width:250px">
+          {% for e in empresas %}
+            <option value="{{ e.id }}" {% if empresa and e.id == empresa.id %}selected{% endif %}>
+              {{ e.razon_social }} ({{ e.rut | rut }})
+            </option>
+          {% endfor %}
+        </select>
+      </form>
+
+      <form method="post" action="/seleccionar-periodo">
+        <label for="mes" style="margin:0">Período</label>
+        <select name="mes" id="mes" onchange="this.form.submit()">
+          {% for numero, nombre in MESES %}
+            <option value="{{ numero }}" {% if numero == mes_activo %}selected{% endif %}>{{ nombre }}</option>
+          {% endfor %}
+        </select>
+        <select name="anio" onchange="this.form.submit()">
+          {% for a in range(hoy().year - 6, hoy().year + 2) %}
+            <option value="{{ a }}" {% if a == anio_activo %}selected{% endif %}>{{ a }}</option>
+          {% endfor %}
+        </select>
+      </form>
+
+      <div class="espacio"></div>
+      {% if usuario %}
+        <span class="usuario">{{ usuario.nombre }} · {{ usuario.rol.value | lower }}</span>
+        <a class="btn sec mini" href="/logout">Salir</a>
+      {% endif %}
+    </header>
+
+    <main class="contenido">
+      {% for m in mensajes %}
+        <div class="aviso {{ m.tipo }}">{{ m.texto }}</div>
+      {% endfor %}
+      {% block contenido %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

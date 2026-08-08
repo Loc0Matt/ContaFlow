@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block titulo %}Plan de cuentas{% endblock %}
+{% block contenido %}
+<h1>Plan de cuentas</h1>
+<p class="subtitulo">{{ lista | length }} cuentas · {{ empresa.razon_social }}</p>
+
+<form class="filtros" method="get">
+  <div class="campo" style="min-width:260px"><label>Buscar</label><input name="texto" value="{{ texto }}" placeholder="Código o nombre"></div>
+  <button class="btn">Buscar</button>
+  <a class="btn sec" href="/maestros/cuentas?formato=xlsx">Excel</a>
+  <a class="btn sec" href="/maestros/cuentas?formato=csv">CSV</a>
+</form>
+
+<details class="plegable">
+  <summary>Agregar o modificar una cuenta</summary>
+  <form method="post" action="/maestros/cuentas/guardar">
+    <input type="hidden" name="cuenta_id" id="cuenta_id">
+    <div class="campos">
+      <div class="campo"><label>Código *</label><input name="codigo" id="f_codigo" required placeholder="5.2.02.018">
+        <div class="ayuda">El nivel y la cuenta padre se deducen de los puntos.</div></div>
+      <div class="campo" style="grid-column:span 2"><label>Nombre *</label><input name="nombre" id="f_nombre" required></div>
+      <div class="campo"><label>Tipo *</label>
+        <select name="tipo" id="f_tipo">{% for t in tipos %}<option value="{{ t.value }}">{{ t.value | capitalize }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="campos">
+      <div class="checkbox"><input type="checkbox" name="imputable" id="f_imputable" checked><label for="f_imputable" style="margin:0">Imputable (recibe movimientos)</label></div>
+      <div class="checkbox"><input type="checkbox" name="requiere_auxiliar" id="f_aux"><label for="f_aux" style="margin:0">Exige cliente/proveedor</label></div>
+      <div class="checkbox"><input type="checkbox" name="requiere_centro_costo" id="f_cc"><label for="f_cc" style="margin:0">Exige centro de costo</label></div>
+      <div class="checkbox"><input type="checkbox" name="es_banco" id="f_banco"><label for="f_banco" style="margin:0">Es cuenta bancaria</label></div>
+    </div>
+    <div class="acciones"><button class="btn">Guardar cuenta</button>
+      <button type="button" class="btn sec" onclick="limpiar()">Limpiar</button></div>
+  </form>
+</details>
+
+<div class="panel tabla-scroll tabla-alta">
+  <table>
+    <thead><tr><th>Código</th><th>Nombre</th><th>Tipo</th><th>Imputable</th><th>Marcas</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+      {% for c in lista %}
+        <tr {% if not c.imputable %}class="grupo"{% endif %}>
+          <td class="mono" style="padding-left:{{ 8 + (c.nivel - 1) * 12 }}px">{{ c.codigo }}</td>
+          <td>{{ c.nombre }}</td>
+          <td>{{ c.tipo.value | capitalize }}</td>
+          <td>{{ 'Sí' if c.imputable else 'No' }}</td>
+          <td>
+            {% if c.requiere_auxiliar %}<span class="etiqueta-estado e-neutro">Auxiliar</span>{% endif %}
+            {% if c.requiere_centro_costo %}<span class="etiqueta-estado e-neutro">C.Costo</span>{% endif %}
+            {% if c.es_banco %}<span class="etiqueta-estado e-neutro">Banco</span>{% endif %}
+          </td>
+          <td><span class="etiqueta-estado {{ 'e-ok' if c.activa else 'e-error' }}">{{ 'Activa' if c.activa else 'Inactiva' }}</span></td>
+          <td class="num no-imprimir">
+            <button class="btn sec mini" onclick='cargar({{ c.id }}, {{ c.codigo | tojson }}, {{ c.nombre | tojson }}, {{ c.tipo.value | tojson }}, {{ c.imputable | tojson }}, {{ c.requiere_auxiliar | tojson }}, {{ c.requiere_centro_costo | tojson }}, {{ c.es_banco | tojson }})'>Editar</button>
+            <form method="post" action="/maestros/cuentas/{{ c.id }}/estado" style="display:inline">
+              <button class="btn sec mini">{{ 'Desactivar' if c.activa else 'Activar' }}</button></form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function cargar(id, codigo, nombre, tipo, imputable, aux, cc, banco) {
+  document.getElementById('cuenta_id').value = id;
+  document.getElementById('f_codigo').value = codigo;
+  document.getElementById('f_nombre').value = nombre;
+  document.getElementById('f_tipo').value = tipo;
+  document.getElementById('f_imputable').checked = imputable;
+  document.getElementById('f_aux').checked = aux;
+  document.getElementById('f_cc').checked = cc;
+  document.getElementById('f_banco').checked = banco;
+  document.querySelector('details.plegable').open = true;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function limpiar() { document.querySelector('details.plegable form').reset(); document.getElementById('cuenta_id').value = ''; }
+</script>
+{% endblock %}

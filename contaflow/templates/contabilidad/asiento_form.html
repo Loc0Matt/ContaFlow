@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block titulo %}Nuevo asiento{% endblock %}
+{% block contenido %}
+<h1>Nuevo comprobante contable</h1>
+<p class="subtitulo">El asiento sólo se guarda si el debe iguala al haber. Los montos van en pesos, sin decimales.</p>
+
+<form method="post" action="/contabilidad/comprobantes/guardar" id="form-asiento">
+  <div class="panel">
+    <div class="campos">
+      <div class="campo"><label>Tipo</label>
+        <select name="tipo">
+          {% for t in tipos %}<option value="{{ t.value }}" {% if t.value == 'TRASPASO' %}selected{% endif %}>{{ t.value | capitalize }}</option>{% endfor %}
+        </select></div>
+      <div class="campo"><label>Fecha *</label><input type="date" name="fecha" value="{{ fecha_sugerida }}" required></div>
+      <div class="campo" style="grid-column:span 2"><label>Glosa *</label><input name="glosa" required placeholder="Descripción del asiento"></div>
+      <div class="campo"><label>Estado</label>
+        <select name="estado"><option value="CONTABILIZADO">Contabilizado</option><option value="BORRADOR">Borrador</option></select></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Líneas del asiento</h3>
+    <div class="tabla-scroll">
+      <table id="tabla-lineas">
+        <thead><tr>
+          <th style="min-width:260px">Cuenta</th><th style="min-width:150px">Glosa</th>
+          <th style="min-width:150px">Auxiliar</th><th style="min-width:120px">C. Costo</th>
+          <th style="min-width:90px">Folio doc.</th>
+          <th class="num" style="min-width:110px">Debe</th><th class="num" style="min-width:110px">Haber</th><th></th>
+        </tr></thead>
+        <tbody></tbody>
+        <tfoot><tr>
+          <td colspan="5" style="text-align:right">Totales</td>
+          <td class="num" id="td-debe">$0</td><td class="num" id="td-haber">$0</td><td></td>
+        </tr>
+        <tr><td colspan="5" style="text-align:right">Diferencia</td>
+            <td class="num" colspan="2" id="td-dif">$0</td><td></td></tr></tfoot>
+      </table>
+    </div>
+    <div class="acciones">
+      <button type="button" class="btn sec mini" onclick="agregarLinea()">+ Agregar línea</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="campo"><label>Observación interna</label><textarea name="observacion" rows="2"></textarea></div>
+  </div>
+
+  <div class="acciones">
+    <button class="btn" id="btn-guardar">Guardar comprobante</button>
+    <a class="btn sec" href="/contabilidad/comprobantes">Cancelar</a>
+  </div>
+</form>
+
+<template id="plantilla-cuentas">
+  <select><option value="">— Seleccionar cuenta —</option>
+  {% for c in cuentas %}<option value="{{ c.id }}">{{ c.codigo }} · {{ c.nombre }}</option>{% endfor %}
+  </select>
+</template>
+<template id="plantilla-entidades">
+  <select><option value="">—</option>
+  {% for e in entidades %}<option value="{{ e.id }}">{{ e.razon_social }}</option>{% endfor %}
+  </select>
+</template>
+<template id="plantilla-centros">
+  <select><option value="">—</option>
+  {% for c in centros %}<option value="{{ c.id }}">{{ c.codigo }} · {{ c.nombre }}</option>{% endfor %}
+  </select>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let contador = 0;
+const cuerpo = document.querySelector('#tabla-lineas tbody');
+
+function selectDesde(plantillaId, nombre) {
+  const sel = document.getElementById(plantillaId).content.firstElementChild.cloneNode(true);
+  sel.name = nombre;
+  return sel;
+}
+
+function agregarLinea() {
+  const i = contador++;
+  const fila = document.createElement('tr');
+
+  const tdCuenta = document.createElement('td');
+  tdCuenta.appendChild(selectDesde('plantilla-cuentas', 'cuenta_id_' + i));
+
+  const tdGlosa = document.createElement('td');
+  tdGlosa.innerHTML = '<input name="glosa_' + i + '">';
+
+  const tdEnt = document.createElement('td');
+  tdEnt.appendChild(selectDesde('plantilla-entidades', 'entidad_' + i));
+
+  const tdCC = document.createElement('td');
+  tdCC.appendChild(selectDesde('plantilla-centros', 'centro_' + i));
+
+  const tdFolio = document.createElement('td');
+  tdFolio.innerHTML = '<input name="folio_' + i + '">';
+
+  const tdDebe = document.createElement('td');
+  tdDebe.className = 'num';
+  tdDebe.innerHTML = '<input class="monto debe" inputmode="numeric" name="debe_' + i + '" style="text-align:right">';
+
+  const tdHaber = document.createElement('td');
+  tdHaber.className = 'num';
+  tdHaber.innerHTML = '<input class="monto haber" inputmode="numeric" name="haber_' + i + '" style="text-align:right">';
+
+  const tdBorrar = document.createElement('td');
+  tdBorrar.innerHTML = '<button type="button" class="btn sec mini">✕</button>';
+  tdBorrar.querySelector('button').onclick = () => { fila.remove(); recalcular(); };
+
+  [tdCuenta, tdGlosa, tdEnt, tdCC, tdFolio, tdDebe, tdHaber, tdBorrar].forEach(td => fila.appendChild(td));
+  cuerpo.appendChild(fila);
+
+  fila.querySelectorAll('.monto').forEach(inp => {
+    inp.addEventListener('input', () => {
+      // Debe y haber son excluyentes dentro de una misma línea.
+      if (inp.value && parseFloat(inp.value) !== 0) {
+        const otro = inp.classList.contains('debe') ? fila.querySelector('.haber') : fila.querySelector('.debe');
+        otro.value = '';
+      }
+      recalcular();
+    });
+  });
+}
+
+function numero(v) { const n = parseFloat(String(v).replace(/\./g, '').replace(',', '.')); return isNaN(n) ? 0 : n; }
+function formatear(n) {
+  const signo = n < 0 ? '-' : '';
+  return signo + '$' + Math.abs(Math.round(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function recalcular() {
+  let debe = 0, haber = 0;
+  cuerpo.querySelectorAll('.debe').forEach(i => debe += numero(i.value));
+  cuerpo.querySelectorAll('.haber').forEach(i => haber += numero(i.value));
+  document.getElementById('td-debe').textContent = formatear(debe);
+  document.getElementById('td-haber').textContent = formatear(haber);
+  const dif = debe - haber;
+  const celda = document.getElementById('td-dif');
+  celda.textContent = formatear(dif);
+  celda.className = 'num ' + (Math.round(dif) === 0 ? 'pos' : 'neg');
+  document.getElementById('btn-guardar').disabled = Math.round(dif) !== 0 || debe === 0;
+}
+
+for (let i = 0; i < 4; i++) agregarLinea();
+recalcular();
+</script>
+{% endblock %}
