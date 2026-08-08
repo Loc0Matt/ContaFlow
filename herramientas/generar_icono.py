@@ -13,7 +13,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 
-from contaflow.marca import ruta_rasterizada  # noqa: E402
+from contaflow.marca import recortar_margenes, ruta_rasterizada  # noqa: E402
 
 #: Windows usa el tamaño que mejor le calce según el contexto.
 TAMANOS = [(n, n) for n in (16, 24, 32, 48, 64, 128, 256)]
@@ -28,8 +28,9 @@ def construir(destino: Path | None = None) -> Path | None:
     from PIL import Image
 
     destino = destino or RAIZ / "build" / "contaflow.ico"
-    with Image.open(origen) as img:
-        img = img.convert("RGBA")
+    with Image.open(origen) as original:
+        # Sin recortar el margen, el icono se ve minúsculo en la barra de tareas.
+        img = recortar_margenes(original).convert("RGBA")
         # El icono debe ser cuadrado: se centra sobre un lienzo transparente.
         lado = max(img.size)
         lienzo = Image.new("RGBA", (lado, lado), (0, 0, 0, 0))

@@ -5,7 +5,7 @@ import logging
 from html import escape
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -22,7 +22,7 @@ from contaflow.web import SinEmpresa, render
 log = logging.getLogger("contaflow")
 
 #: Rutas accesibles sin sesión iniciada.
-RUTAS_PUBLICAS = {"/login", "/logout", "/salud", "/firma"}
+RUTAS_PUBLICAS = {"/login", "/logout", "/salud", "/firma", "/logo"}
 
 
 def crear_app() -> FastAPI:
@@ -70,6 +70,20 @@ def crear_app() -> FastAPI:
     @app.get("/salud", include_in_schema=False)
     def salud():
         return {"estado": "ok", "version": APP_VERSION}
+
+    @app.get("/logo", include_in_schema=False)
+    def logo():
+        """Sirve el logotipo, recortado y cacheado en la carpeta de datos."""
+        from fastapi.responses import FileResponse
+
+        from contaflow.marca import archivo_a_servir
+
+        archivo = archivo_a_servir()
+        if archivo is None:
+            return Response(status_code=404)
+        ruta, tipo = archivo
+        return FileResponse(ruta, media_type=tipo,
+                            headers={"Cache-Control": "max-age=3600"})
 
     @app.get("/firma", include_in_schema=False)
     def firma():

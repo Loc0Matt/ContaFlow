@@ -26,7 +26,7 @@ from reportlab.platypus import (  # noqa: E402
 from reportlab.platypus.tableofcontents import TableOfContents  # noqa: E402
 
 from contaflow.firma import linea_credito, marca_agua, sello  # noqa: E402
-from contaflow.marca import ruta_rasterizada  # noqa: E402
+from contaflow.marca import logo_recortado, ruta_rasterizada  # noqa: E402
 from contaflow.config import (  # noqa: E402
     APP_NAME, APP_VERSION, RETENCION_HONORARIOS, TABLA_IMPUESTO_UNICO_UTM, TASAS_AFC,
     TASA_SALUD_LEGAL, TASA_SIS_EMPLEADOR, TOPE_IMPONIBLE_AFC_UF, TOPE_IMPONIBLE_AFP_UF,
@@ -248,11 +248,12 @@ def cta(codigo: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def logo_portada(ancho_mm: float = 52):
+def logo_portada(ancho_mm: float = 68):
     """Logotipo de la portada. Vacío si no hay imagen rasterizada disponible."""
-    ruta = ruta_rasterizada()
-    if ruta is None:
+    if ruta_rasterizada() is None:
         return []
+    # Se recorta el margen para que el logo no salga diminuto en la portada.
+    ruta = logo_recortado(RAIZ / "build" / "logo-portada.png") or ruta_rasterizada()
     try:
         from PIL import Image as PILImage
 

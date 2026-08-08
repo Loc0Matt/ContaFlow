@@ -131,7 +131,7 @@ class TestLogotipo(unittest.TestCase):
         from contaflow.marca import ruta_logo, url_logo
 
         self.assertIsNotNone(ruta_logo(), "Falta incluso el escudo de reserva.")
-        self.assertTrue(url_logo().startswith("/static/"))
+        self.assertEqual(url_logo(), "/logo")
 
     def test_el_escudo_de_reserva_existe(self):
         reserva = RAIZ / "contaflow" / "static" / "logo-generico.svg"
@@ -169,9 +169,16 @@ class TestLogotipo(unittest.TestCase):
 
         from contaflow.app import crear_app
 
-        html = TestClient(crear_app()).get("/login").text
+        cliente = TestClient(crear_app())
+        html = cliente.get("/login").text
         self.assertIn('rel="icon"', html)
-        self.assertIn("/static/logo", html)
+        self.assertIn("/logo", html)
+
+        # La ruta /logo entrega una imagen real, sin necesidad de iniciar sesión.
+        respuesta = cliente.get("/logo")
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.headers["content-type"].startswith("image/"))
+        self.assertGreater(len(respuesta.content), 500)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
