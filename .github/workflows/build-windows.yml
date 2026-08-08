@@ -68,12 +68,13 @@ jobs:
           $tamano = (Get-Item dist/ContaFlow.exe).Length / 1MB
           Write-Host ("Tamano del ejecutable: {0:N1} MB" -f $tamano)
 
-          # Arranca el .exe y comprueba que el servidor responda en /salud.
-          # La salida se redirige a archivos: si el proceso hereda la tuberia
-          # del step, GitHub Actions se queda esperando aunque lo detengamos.
-          $env:CONTAFLOW_DATA = "$env:RUNNER_TEMP\contaflow-smoke"
-          Start-Process -FilePath dist/ContaFlow.exe `
-            -RedirectStandardOutput salida.log -RedirectStandardError error.log | Out-Null
+          # Se lanza SIN redirigir la salida, igual que un doble clic: el .exe
+          # se compila con console=False, asi que Windows no le da consola y
+          # sys.stdout/sys.stderr quedan en None. Redirigir la salida les daria
+          # flujos reales y ocultaria justamente los fallos de ese escenario.
+          $datos = "$env:RUNNER_TEMP\contaflow-smoke"
+          $env:CONTAFLOW_DATA = $datos
+          Start-Process -FilePath dist/ContaFlow.exe | Out-Null
 
           $ok = $false
           foreach ($i in 1..30) {
@@ -84,14 +85,15 @@ jobs:
             } catch { }
           }
 
-          # El bootloader onefile lanza un proceso hijo: hay que detener ambos,
-          # o el step queda colgado reteniendo la tuberia de salida.
+          # El bootloader onefile lanza un proceso hijo: hay que detener ambos
+          # por nombre, o el step queda colgado esperando al que sobrevive.
           Get-Process -Name ContaFlow -ErrorAction SilentlyContinue | Stop-Process -Force
           Start-Sleep -Seconds 2
 
           if (-not $ok) {
-            Write-Host "--- salida.log ---"; Get-Content salida.log -ErrorAction SilentlyContinue
-            Write-Host "--- error.log ---";  Get-Content error.log  -ErrorAction SilentlyContinue
+            # Sin consola, la aplicacion vuelca sus mensajes a este archivo.
+            Write-Host "--- contaflow.log ---"
+            Get-Content "$datos\contaflow.log" -ErrorAction SilentlyContinue
             throw "El ejecutable no respondio en /salud"
           }
           Write-Host "El ejecutable arranca y responde correctamente."

@@ -5,15 +5,44 @@ Es el archivo que PyInstaller convierte en ContaFlow.exe.
 """
 from __future__ import annotations
 
+import os
 import socket
 import sys
 import threading
 import time
+import traceback
 import webbrowser
 
 import uvicorn
 
 from contaflow.config import APP_NAME, APP_VERSION, DIR_DATOS, HOST, PUERTO
+
+#: Archivo donde queda el registro cuando la aplicación corre sin consola.
+RUTA_REGISTRO = DIR_DATOS / "contaflow.log"
+
+
+def asegurar_flujos() -> None:
+    """Garantiza que sys.stdout y sys.stderr existan.
+
+    PyInstaller en modo ventana (console=False) los deja en None, porque el
+    ejecutable no tiene consola asociada. Cualquier librería que escriba —o
+    que consulte isatty(), como el formateador de logs de uvicorn— falla con
+    «'NoneType' object has no attribute 'isatty'». Se redirigen a un archivo
+    de registro para no perder los mensajes.
+    """
+    if sys.stdout is not None and sys.stderr is not None:
+        return
+    try:
+        destino = open(RUTA_REGISTRO, "a", encoding="utf-8", buffering=1)
+    except OSError:
+        destino = open(os.devnull, "w", encoding="utf-8")
+    if sys.stdout is None:
+        sys.stdout = destino
+    if sys.stderr is None:
+        sys.stderr = destino
+
+
+asegurar_flujos()
 
 
 def puerto_disponible(host: str, puerto: int) -> bool:
@@ -40,7 +69,12 @@ class Servidor:
         from contaflow.app import app
 
         self.url = f"http://{host}:{puerto}"
-        config = uvicorn.Config(app, host=host, port=puerto, log_level="warning", access_log=False)
+        # log_config=None evita que uvicorn instale su propio formateador con
+        # colores, que depende de sys.stdout.isatty() y no funciona sin consola.
+        config = uvicorn.Config(
+            app, host=host, port=puerto, log_level="warning",
+            access_log=False, log_config=None, use_colors=False,
+        )
         self._servidor = uvicorn.Server(config)
         self._hilo = threading.Thread(target=self._servidor.run, daemon=True)
 
@@ -108,6 +142,36 @@ def ventana_control(servidor: Servidor) -> bool:
     return True
 
 
+def informar_error(exc: BaseException) -> None:
+    """Muestra un error de arranque de forma legible y lo deja en el registro.
+
+    Sin esto, un fallo temprano en el ejecutable sólo produce el críptico
+    «Failed to execute script 'run'» de PyInstaller.
+    """
+    detalle = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+    try:
+        with open(RUTA_REGISTRO, "a", encoding="utf-8") as registro:
+            registro.write(f"\n--- Error de arranque ---\n{detalle}\n")
+    except OSError:
+        pass
+
+    mensaje = (
+        f"{APP_NAME} no pudo iniciarse.\n\n"
+        f"{type(exc).__name__}: {exc}\n\n"
+        f"El detalle quedó en:\n{RUTA_REGISTRO}"
+    )
+    try:
+        import tkinter as tk
+        from tkinter import messagebox
+
+        raiz = tk.Tk()
+        raiz.withdraw()
+        messagebox.showerror(f"{APP_NAME} — error de arranque", mensaje)
+        raiz.destroy()
+    except Exception:
+        print(mensaje, file=sys.stderr)
+
+
 def main() -> int:
     puerto = buscar_puerto(HOST, PUERTO)
     servidor = Servidor(HOST, puerto)
@@ -134,4 +198,10 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except SystemExit:
+        raise
+    except BaseException as exc:  # noqa: BLE001 - último recurso del ejecutable
+        informar_error(exc)
+        sys.exit(1)
