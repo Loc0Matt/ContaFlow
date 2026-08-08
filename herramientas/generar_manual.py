@@ -25,6 +25,7 @@ from reportlab.platypus import (  # noqa: E402
 )
 from reportlab.platypus.tableofcontents import TableOfContents  # noqa: E402
 
+from contaflow.firma import linea_credito, marca_agua, sello  # noqa: E402
 from contaflow.config import (  # noqa: E402
     APP_NAME, APP_VERSION, RETENCION_HONORARIOS, TABLA_IMPUESTO_UNICO_UTM, TASAS_AFC,
     TASA_SALUD_LEGAL, TASA_SIS_EMPLEADOR, TOPE_IMPONIBLE_AFC_UF, TOPE_IMPONIBLE_AFP_UF,
@@ -1731,7 +1732,9 @@ def construir(salida: Path) -> Path:
         str(salida), pagesize=A4,
         leftMargin=18 * mm, rightMargin=18 * mm, topMargin=18 * mm, bottomMargin=22 * mm,
         title=f"Manual de usuario · {APP_NAME} {APP_VERSION}",
-        author=APP_NAME, subject="Manual de usuario del sistema contable chileno ContaFlow",
+        author=sello()["autor"],
+        subject="Manual de usuario del sistema contable chileno ContaFlow",
+        creator=linea_credito(), keywords=marca_agua(),
     )
     marco = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id="normal")
     doc.addPageTemplates([

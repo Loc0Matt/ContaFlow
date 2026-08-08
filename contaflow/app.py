@@ -22,7 +22,7 @@ from contaflow.web import SinEmpresa, render
 log = logging.getLogger("contaflow")
 
 #: Rutas accesibles sin sesión iniciada.
-RUTAS_PUBLICAS = {"/login", "/logout", "/salud"}
+RUTAS_PUBLICAS = {"/login", "/logout", "/salud", "/firma"}
 
 
 def crear_app() -> FastAPI:
@@ -70,6 +70,18 @@ def crear_app() -> FastAPI:
     @app.get("/salud", include_in_schema=False)
     def salud():
         return {"estado": "ok", "version": APP_VERSION}
+
+    @app.get("/firma", include_in_schema=False)
+    def firma():
+        """Sello de autoría. No figura en el menú; se consulta por URL directa."""
+        from contaflow.firma import HUELLA, intacto, linea_credito, sello
+
+        return {
+            **sello(),
+            "huella": HUELLA,
+            "intacto": intacto(),
+            "credito": linea_credito(),
+        }
 
     for modulo in (general, empresas, contabilidad, tributario, maestros, remuneraciones,
                    activofijo, informes, configuracion):

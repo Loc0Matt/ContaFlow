@@ -7,14 +7,15 @@ VSVersionInfo(
   kids=[
     StringFileInfo([
       StringTable('340a04b0', [
-        StringStruct('CompanyName', 'ContaFlow'),
+        StringStruct('CompanyName', 'Loc0Matt'),
         StringStruct('FileDescription', 'ContaFlow - Sistema Contable Chileno'),
         StringStruct('FileVersion', '1.0.0'),
         StringStruct('InternalName', 'ContaFlow'),
-        StringStruct('LegalCopyright', 'Uso personal'),
+        StringStruct('LegalCopyright', 'Copyright (c) 2026 Loc0Matt - Licencia MIT'),
         StringStruct('OriginalFilename', 'ContaFlow.exe'),
         StringStruct('ProductName', 'ContaFlow'),
-        StringStruct('ProductVersion', '1.0.0')])
+        StringStruct('ProductVersion', '1.0.0'),
+        StringStruct('Comments', 'Creado por Loc0Matt. Codigo abierto bajo licencia MIT.')])
     ]),
     VarFileInfo([VarStruct('Translation', [0x340a, 1200])])
   ]

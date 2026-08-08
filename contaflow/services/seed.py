@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from contaflow.config import AFP_DEFECTO
+from contaflow.firma import HUELLA, marca_agua
 from contaflow.models import AFP, CentroCosto, Cuenta, Empresa, Parametro, TipoDTE, Usuario
 from contaflow.models.base import RolUsuario
 from contaflow.services.plan_cuentas import CUENTAS_DEFECTO, PLAN_CUENTAS, TIPOS_DTE
@@ -26,6 +27,13 @@ def sembrar_globales(db: Session) -> None:
     for nombre, tasa in AFP_DEFECTO:
         if nombre not in nombres_afp:
             db.add(AFP(nombre=nombre, tasa=tasa))
+
+    # Sello de autoría: queda en la base y acompaña a cualquier copia o respaldo.
+    if not db.scalar(select(Parametro).where(Parametro.clave == "sello_autoria")):
+        db.add(Parametro(empresa_id=None, clave="sello_autoria", valor=marca_agua(),
+                         descripcion="Autoría del sistema"))
+        db.add(Parametro(empresa_id=None, clave="sello_huella", valor=HUELLA,
+                         descripcion="Huella SHA-256 del sello de autoría"))
 
     if not db.scalar(select(Usuario).limit(1)):
         db.add(Usuario(
