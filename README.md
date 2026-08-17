@@ -14,23 +14,34 @@ oficiales del SII.
 
 ## Descargar el ejecutable
 
-El `.exe` se construye automáticamente en un runner de Windows cada vez que se
-actualiza el repositorio.
+### ⬇️ [Descargar ContaFlow.exe](https://github.com/Loc0Matt/ContaFlow/releases/latest/download/ContaFlow.exe)
 
-1. Entra a la pestaña **Actions** del repositorio en GitHub.
-2. Abre la ejecución más reciente de **«Construir ContaFlow.exe (Windows)»**.
-3. En la sección *Artifacts*, descarga **ContaFlow-Windows**.
-4. Descomprime el ZIP: dentro está `ContaFlow.exe`.
+Un clic en el link de arriba y empieza la descarga — no hace falta cuenta de GitHub,
+ni saber qué es un repositorio, ni nada técnico. Ese link **siempre entrega la última
+versión estable publicada**, aunque en ese momento se esté preparando la siguiente por
+otro lado: cada versión queda fija en su propia página, así que nunca vas a bajar algo
+a medio terminar.
 
-Colócalo donde quieras (Escritorio, `C:\ContaFlow\`, un pendrive) y ábrelo con doble clic.
-**No necesitas instalar Python ni nada más.**
+Cuando termine de descargar:
 
-En el mismo ZIP viene **`Manual-ContaFlow.pdf`**: 48 páginas con índice clickeable que
-explican cada apartado del sistema y las 145 cuentas del plan contable, una por una.
+1. Colócalo donde quieras (Escritorio, `C:\ContaFlow\`, un pendrive).
+2. Ábrelo con doble clic. **No necesitas instalar Python ni nada más.**
+3. Windows SmartScreen puede advertir porque el ejecutable no está firmado digitalmente
+   (ocurre con cualquier programa sin certificado de firma comercial paga). Elige
+   **Más información → Ejecutar de todas formas**.
 
-> Windows SmartScreen puede advertir porque el ejecutable no está firmado digitalmente.
-> Elige **Más información → Ejecutar de todas formas**. Ocurre con cualquier programa
-> sin certificado de firma comercial.
+El manual de usuario (48 páginas, con índice clickeable, explica cada apartado del
+sistema y las 145 cuentas del plan contable una por una) se descarga igual de simple:
+
+**[📖 Descargar el manual en PDF](https://github.com/Loc0Matt/ContaFlow/releases/latest/download/Manual-ContaFlow.pdf)**
+
+<details>
+<summary><strong>Ver todas las versiones publicadas</strong></summary>
+
+En la [página de Releases](https://github.com/Loc0Matt/ContaFlow/releases) están todas
+las versiones anteriores, por si necesitas volver a una en particular.
+
+</details>
 
 ### Construirlo tú mismo en Windows
 
@@ -42,6 +53,14 @@ Si prefieres compilarlo en tu propio equipo:
 
 El script crea el entorno, instala dependencias, corre las pruebas y deja el ejecutable
 en `dist\ContaFlow.exe`.
+
+### La versión en desarrollo (para quien quiera probar lo último sin esperar una Release)
+
+Cada vez que se sube un cambio al repositorio, GitHub compila automáticamente un `.exe`
+de prueba y lo deja en la pestaña **Actions → (ejecución más reciente) → Artifacts**.
+Es la versión más nueva posible, pero puede no estar del todo probada — pensada para
+colaboradores, no para uso general. Requiere estar con sesión iniciada en GitHub para
+poder descargarla.
 
 ---
 
