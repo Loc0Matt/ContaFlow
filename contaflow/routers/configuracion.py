@@ -185,13 +185,19 @@ def cambiar_password(
 
 
 @router.get("/respaldos")
-def respaldos(request: Request):
+def respaldos(request: Request, db: Session = Depends(get_db)):
+    from contaflow.config import APP_VERSION
+    from contaflow.services.migraciones import VERSION_ACTUAL, version_guardada
+
     archivos = [
         {"nombre": p.name, "tamano": p.stat().st_size // 1024, "fecha": p.stat().st_mtime}
         for p in listar_respaldos()
     ]
     return render(request, "configuracion/respaldos.html", {
         "archivos": archivos, "carpeta": str(DIR_DATOS),
+        "app_version": APP_VERSION,
+        "version_esquema": version_guardada(db.connection()),
+        "version_esquema_actual": VERSION_ACTUAL,
     })
 
 

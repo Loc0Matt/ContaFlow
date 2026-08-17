@@ -259,7 +259,17 @@ def pdf_formulario(
 
 
 def crear_respaldo() -> Path:
-    """Copia la base de datos a la carpeta de respaldos."""
+    """Copia la base de datos a la carpeta de respaldos.
+
+    Antes de copiar, vuelca el WAL al archivo principal: en modo WAL lo
+    último confirmado puede estar todavía sólo en contaflow.db-wal, y una
+    copia del .db sin ese paso se quedaría corta.
+    """
+    from contaflow.database import engine
+
+    if engine.url.get_backend_name() == "sqlite":
+        with engine.connect() as conn:
+            conn.exec_driver_sql("PRAGMA wal_checkpoint(FULL)")
     destino = DIR_BACKUPS / f"contaflow-{datetime.now():%Y%m%d-%H%M%S}.db"
     shutil.copy2(RUTA_BD, destino)
     return destino

@@ -5,6 +5,21 @@
 <p class="subtitulo">Tus datos viven en un único archivo SQLite dentro de <span class="mono">{{ carpeta }}</span></p>
 
 <div class="panel">
+  <h3>Versión</h3>
+  <p class="ayuda">
+    ContaFlow {{ app_version }} · esquema de base de datos v{{ version_esquema }}
+    {% if version_esquema < version_esquema_actual %}
+      <span class="etiqueta-estado e-neutro">actualizando…</span>
+    {% else %}
+      <span class="etiqueta-estado e-ok">al día</span>
+    {% endif %}
+  </p>
+  <p class="ayuda">Al actualizar el .exe, tus datos no se tocan: quedan en la carpeta de arriba,
+     separada del programa. Si la actualización necesita cambiar la estructura de la base de datos,
+     ContaFlow lo hace solo al abrir y crea un respaldo automático antes de hacerlo.</p>
+</div>
+
+<div class="panel">
   <h3>Crear respaldo</h3>
   <p class="ayuda">Copia la base de datos completa (todas las empresas) a la carpeta de respaldos.
      Hazlo antes de cerrar un ejercicio o de restaurar.</p>

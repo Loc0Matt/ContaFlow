@@ -57,5 +57,10 @@ def sesion() -> Iterator[Session]:
 def crear_esquema() -> None:
     from contaflow import models  # noqa: F401  (registra los modelos)
     from contaflow.models.base import Base
+    from contaflow.services.migraciones import migrar_esquema
 
     Base.metadata.create_all(engine)
+    # create_all() sólo agrega tablas nuevas; una base de datos de una
+    # versión anterior puede seguir faltándole columnas que sí existen en
+    # los modelos de hoy. migrar_esquema() se encarga de ponerla al día.
+    migrar_esquema(engine)

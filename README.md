@@ -109,6 +109,22 @@ Ese único archivo contiene **todas** las empresas. Respáldalo desde
 *Configuración → Respaldos* o cópialo a mano. Si actualizas el `.exe`, los datos se
 conservan porque viven fuera del ejecutable.
 
+### Actualizar ContaFlow
+
+No hay actualización automática por internet (el sistema es offline a propósito).
+Actualizar es descargar el `.exe` nuevo y reemplazar el viejo — nada más. Como los
+datos viven aparte (ver arriba), reemplazar el ejecutable no los toca.
+
+Si una actualización necesita cambiar la estructura de la base de datos (agregar un
+campo nuevo a una tabla existente, por ejemplo), ContaFlow lo detecta y lo aplica solo
+al abrir, y crea automáticamente un respaldo completo justo antes de tocar nada — no
+hace falta hacer nada manual ni acordarse de nada. Puedes ver la versión de esquema
+aplicada en *Configuración → Respaldos*.
+
+El `.exe` anterior no se borra solo: si quieres conservarlo como respaldo, simplemente
+no lo sobrescribas (guárdalo con otro nombre). Ambas versiones leen la misma carpeta
+de datos.
+
 ---
 
 ## Qué incluye
