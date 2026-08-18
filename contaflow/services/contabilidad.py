@@ -525,6 +525,21 @@ def cerrar_ejercicio(
     db: Session, empresa_id: int, anio: int, cuenta_resultado_id: int, usuario: str | None = None
 ) -> Comprobante:
     """Genera el asiento de cierre que traspasa las cuentas de resultado."""
+    cierre_previo = db.scalar(
+        select(Comprobante).where(
+            Comprobante.empresa_id == empresa_id,
+            Comprobante.anio == anio,
+            Comprobante.tipo == TipoComprobante.CIERRE,
+            Comprobante.origen == OrigenComprobante.CIERRE,
+            Comprobante.estado == EstadoComprobante.CONTABILIZADO,
+        )
+    )
+    if cierre_previo is not None:
+        raise ErrorContable(
+            f"El ejercicio {anio} ya tiene un cierre contabilizado "
+            f"(comprobante {cierre_previo.folio}). Anúlalo primero si necesitas rehacerlo."
+        )
+
     desde, _ = rango_mes(anio, 1)
     _, hasta = rango_mes(anio, 12)
     filas = saldos(db, empresa_id, desde=desde, hasta=hasta, inicio_ejercicio=desde)

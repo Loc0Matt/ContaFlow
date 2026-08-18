@@ -23,8 +23,8 @@ from contaflow.models import (  # noqa: E402
 )
 from contaflow.services import activofijo as af  # noqa: E402
 from contaflow.services.contabilidad import (  # noqa: E402
-    ErrorContable, LineaAsiento, balance_general, crear_comprobante, estado_resultados,
-    libro_mayor, saldos,
+    ErrorContable, LineaAsiento, balance_general, cerrar_ejercicio, crear_comprobante,
+    estado_resultados, libro_mayor, saldos,
 )
 from contaflow.services.documentos import (  # noqa: E402
     calcular_iva, generar_asiento_documento, neto_desde_total, obtener_o_crear_entidad, totalizar,
@@ -258,6 +258,58 @@ class TestComprobantes(BaseTest):
         self.assertEqual(anterior, 0)
         self.assertEqual(len(filas), 2)
         self.assertEqual(pesos(filas[-1][1]), 350_000)
+
+
+class TestCierreDeEjercicio(BaseTest):
+    """P2-3: cerrar_ejercicio no impedía un segundo cierre para el mismo año."""
+
+    def _con_resultado(self, anio=2025):
+        crear_comprobante(
+            self.db, self.empresa.id,
+            tipo=TipoComprobante.INGRESO, fecha=date(anio, 3, 1), glosa="Venta",
+            lineas=[
+                LineaAsiento(cuenta_id=self.cuenta("1.1.01.001").id, debe=1_000_000),
+                LineaAsiento(cuenta_id=self.cuenta("4.1.01.001").id, haber=1_000_000),
+            ],
+        )
+
+    def test_primer_cierre_funciona(self):
+        self._con_resultado()
+        comp = cerrar_ejercicio(
+            self.db, self.empresa.id, 2025, self.cuenta("3.1.01.001").id, usuario="prueba"
+        )
+        self.assertEqual(comp.tipo, TipoComprobante.CIERRE)
+        self.assertTrue(comp.cuadrado)
+
+    def test_segundo_cierre_del_mismo_anio_se_rechaza(self):
+        self._con_resultado()
+        cerrar_ejercicio(self.db, self.empresa.id, 2025, self.cuenta("3.1.01.001").id)
+
+        # Aunque haya movimientos nuevos que cerrar, no debe generarse un
+        # segundo comprobante de cierre para el mismo año.
+        self._con_resultado()
+        with self.assertRaises(ErrorContable) as ctx:
+            cerrar_ejercicio(self.db, self.empresa.id, 2025, self.cuenta("3.1.01.001").id)
+        self.assertIn("ya tiene un cierre", str(ctx.exception))
+
+    def test_anos_distintos_no_interfieren(self):
+        self._con_resultado(anio=2025)
+        self._con_resultado(anio=2026)
+        cerrar_ejercicio(self.db, self.empresa.id, 2025, self.cuenta("3.1.01.001").id)
+        # El cierre de 2025 no debe bloquear el de 2026.
+        comp_2026 = cerrar_ejercicio(self.db, self.empresa.id, 2026, self.cuenta("3.1.01.001").id)
+        self.assertEqual(comp_2026.anio, 2026)
+
+    def test_un_cierre_anulado_permite_uno_nuevo(self):
+        from contaflow.services.contabilidad import anular_comprobante
+
+        self._con_resultado()
+        primero = cerrar_ejercicio(self.db, self.empresa.id, 2025, self.cuenta("3.1.01.001").id)
+        anular_comprobante(self.db, primero, "Rehacer el cierre")
+
+        self._con_resultado()  # el reverso del anulado deja saldos en 0; se agrega otro movimiento
+        segundo = cerrar_ejercicio(self.db, self.empresa.id, 2025, self.cuenta("3.1.01.001").id)
+        self.assertNotEqual(segundo.id, primero.id)
 
 
 class TestDocumentos(BaseTest):
