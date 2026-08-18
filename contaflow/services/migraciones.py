@@ -83,16 +83,51 @@ def agregar_columna_si_falta(conn: Connection, tabla: str, columna: str, definic
     conn.execute(text(f"ALTER TABLE {tabla} ADD COLUMN {columna} {definicion_sql}"))
 
 
+def quitar_columna_si_existe(conn: Connection, tabla: str, columna: str) -> None:
+    """`ALTER TABLE ... DROP COLUMN`, sólo si la columna existe todavía.
+
+    Requiere SQLite 3.35+ (2021); el intérprete embebido en el .exe siempre
+    trae una versión más nueva, así que no hace falta contemplar el caso
+    contrario. Si la columna no existe (base nueva, o ya migrada antes),
+    no hace nada.
+    """
+    if not columna_existe(conn, tabla, columna):
+        return
+    conn.execute(text(f"ALTER TABLE {tabla} DROP COLUMN {columna}"))
+
+
 # ---------------------------------------------------------------------------
-# Registro de migraciones. Vacío por ahora: no hay ningún cambio de esquema
-# pendiente. Queda listo para cuando haga falta el primero, por ejemplo:
-#
-# MIGRACIONES: tuple[Migracion, ...] = (
-#     Migracion(1, "Agrega Trabajador.telefono", lambda conn: agregar_columna_si_falta(
-#         conn, "trabajador", "telefono", "VARCHAR(30)")),
-# )
+# Registro de migraciones. Se agregan al final; nunca se edita una que ya
+# haya salido a producción, o las instalaciones que ya la aplicaron y las
+# que la van a aplicar por primera vez quedarían con historias distintas.
 # ---------------------------------------------------------------------------
-MIGRACIONES: tuple[Migracion, ...] = ()
+def _agregar_columnas_seguridad_login(conn: Connection) -> None:
+    agregar_columna_si_falta(conn, "usuario", "debe_cambiar_password", "BOOLEAN NOT NULL DEFAULT 0")
+    agregar_columna_si_falta(conn, "usuario", "intentos_fallidos", "INTEGER NOT NULL DEFAULT 0")
+    agregar_columna_si_falta(conn, "usuario", "bloqueado_hasta", "DATETIME")
+
+    # Sólo se marca para cambio obligatorio a quien todavía tiene la
+    # contraseña por defecto ("admin") — no molesta a quien ya la cambió.
+    from contaflow.services.seguridad import verificar_password
+
+    for id_, hash_ in conn.execute(text("SELECT id, password_hash FROM usuario")).fetchall():
+        if hash_ and verificar_password("admin", hash_):
+            conn.execute(
+                text("UPDATE usuario SET debe_cambiar_password = 1 WHERE id = :id"),
+                {"id": id_},
+            )
+
+
+MIGRACIONES: tuple[Migracion, ...] = (
+    Migracion(
+        1, "Quita Usuario.rol (se elimina el sistema de roles)",
+        lambda conn: quitar_columna_si_existe(conn, "usuario", "rol"),
+    ),
+    Migracion(
+        2, "Agrega cambio de password obligatorio y límite de intentos de login",
+        _agregar_columnas_seguridad_login,
+    ),
+)
 
 VERSION_ACTUAL = max((m.version for m in MIGRACIONES), default=0)
 

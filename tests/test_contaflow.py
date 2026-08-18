@@ -9,6 +9,7 @@ import tempfile
 import unittest
 from datetime import date
 from pathlib import Path
+from unittest import mock
 
 os.environ.setdefault("CONTAFLOW_DATA", tempfile.mkdtemp(prefix="contaflow-test-"))
 os.environ["CONTAFLOW_DB_URL"] = "sqlite:///" + str(
@@ -22,8 +23,8 @@ from contaflow.models import (  # noqa: E402
 )
 from contaflow.services import activofijo as af  # noqa: E402
 from contaflow.services.contabilidad import (  # noqa: E402
-    ErrorContable, LineaAsiento, balance_general, crear_comprobante, estado_resultados,
-    libro_mayor, saldos,
+    ErrorContable, LineaAsiento, balance_general, cerrar_ejercicio, crear_comprobante,
+    estado_resultados, libro_mayor, saldos,
 )
 from contaflow.services.documentos import (  # noqa: E402
     calcular_iva, generar_asiento_documento, neto_desde_total, obtener_o_crear_entidad, totalizar,
@@ -211,6 +212,35 @@ class TestComprobantes(BaseTest):
         )
         self.assertEqual(comp.numero, 4)
 
+    def test_choque_de_numeracion_da_error_de_negocio_no_500(self):
+        """Simula la condición de carrera de P1-1: dos requests casi
+        simultáneas leen el mismo "siguiente número" (acá, forzado con un
+        mock) antes de que la primera termine de guardar. La segunda debe
+        recibir un ErrorContable claro, no un IntegrityError crudo."""
+        import contaflow.services.contabilidad as mod
+
+        with mock.patch.object(mod, "siguiente_numero", return_value=99):
+            crear_comprobante(
+                self.db, self.empresa.id,
+                tipo=TipoComprobante.INGRESO, fecha=date(2025, 7, 1), glosa="Primero",
+                lineas=[
+                    LineaAsiento(cuenta_id=self.cuenta("1.1.01.001").id, debe=1000),
+                    LineaAsiento(cuenta_id=self.cuenta("4.1.01.001").id, haber=1000),
+                ],
+            )
+            with self.assertRaises(ErrorContable) as ctx:
+                crear_comprobante(
+                    self.db, self.empresa.id,
+                    tipo=TipoComprobante.INGRESO, fecha=date(2025, 7, 2), glosa="Choca con el primero",
+                    lineas=[
+                        LineaAsiento(cuenta_id=self.cuenta("1.1.01.001").id, debe=2000),
+                        LineaAsiento(cuenta_id=self.cuenta("4.1.01.001").id, haber=2000),
+                    ],
+                )
+        self.assertIn("Otro proceso", str(ctx.exception))
+        # La sesión debe quedar utilizable después del rollback interno.
+        self.assertTrue(self.db.is_active)
+
     def test_mayor_y_saldo(self):
         for monto in (100_000, 250_000):
             crear_comprobante(
@@ -228,6 +258,58 @@ class TestComprobantes(BaseTest):
         self.assertEqual(anterior, 0)
         self.assertEqual(len(filas), 2)
         self.assertEqual(pesos(filas[-1][1]), 350_000)
+
+
+class TestCierreDeEjercicio(BaseTest):
+    """P2-3: cerrar_ejercicio no impedía un segundo cierre para el mismo año."""
+
+    def _con_resultado(self, anio=2025):
+        crear_comprobante(
+            self.db, self.empresa.id,
+            tipo=TipoComprobante.INGRESO, fecha=date(anio, 3, 1), glosa="Venta",
+            lineas=[
+                LineaAsiento(cuenta_id=self.cuenta("1.1.01.001").id, debe=1_000_000),
+                LineaAsiento(cuenta_id=self.cuenta("4.1.01.001").id, haber=1_000_000),
+            ],
+        )
+
+    def test_primer_cierre_funciona(self):
+        self._con_resultado()
+        comp = cerrar_ejercicio(
+            self.db, self.empresa.id, 2025, self.cuenta("3.1.01.001").id, usuario="prueba"
+        )
+        self.assertEqual(comp.tipo, TipoComprobante.CIERRE)
+        self.assertTrue(comp.cuadrado)
+
+    def test_segundo_cierre_del_mismo_anio_se_rechaza(self):
+        self._con_resultado()
+        cerrar_ejercicio(self.db, self.empresa.id, 2025, self.cuenta("3.1.01.001").id)
+
+        # Aunque haya movimientos nuevos que cerrar, no debe generarse un
+        # segundo comprobante de cierre para el mismo año.
+        self._con_resultado()
+        with self.assertRaises(ErrorContable) as ctx:
+            cerrar_ejercicio(self.db, self.empresa.id, 2025, self.cuenta("3.1.01.001").id)
+        self.assertIn("ya tiene un cierre", str(ctx.exception))
+
+    def test_anos_distintos_no_interfieren(self):
+        self._con_resultado(anio=2025)
+        self._con_resultado(anio=2026)
+        cerrar_ejercicio(self.db, self.empresa.id, 2025, self.cuenta("3.1.01.001").id)
+        # El cierre de 2025 no debe bloquear el de 2026.
+        comp_2026 = cerrar_ejercicio(self.db, self.empresa.id, 2026, self.cuenta("3.1.01.001").id)
+        self.assertEqual(comp_2026.anio, 2026)
+
+    def test_un_cierre_anulado_permite_uno_nuevo(self):
+        from contaflow.services.contabilidad import anular_comprobante
+
+        self._con_resultado()
+        primero = cerrar_ejercicio(self.db, self.empresa.id, 2025, self.cuenta("3.1.01.001").id)
+        anular_comprobante(self.db, primero, "Rehacer el cierre")
+
+        self._con_resultado()  # el reverso del anulado deja saldos en 0; se agrega otro movimiento
+        segundo = cerrar_ejercicio(self.db, self.empresa.id, 2025, self.cuenta("3.1.01.001").id)
+        self.assertNotEqual(segundo.id, primero.id)
 
 
 class TestDocumentos(BaseTest):
@@ -589,6 +671,18 @@ class TestAplicacionWeb(unittest.TestCase):
         cls.cliente = TestClient(crear_app())
         cls.cliente.post("/login", data={"username": "admin", "password": "admin"},
                          follow_redirects=False)
+        # El admin sembrado exige cambiar la contraseña por defecto antes de
+        # poder usar el resto del sistema (P1-4) — igual que haría cualquier
+        # persona la primera vez que abre ContaFlow.
+        cls.cliente.post("/configuracion/cambiar-password", data={
+            "password_actual": "admin", "password_nueva": "una-clave-de-prueba-larga",
+        }, follow_redirects=False)
+        # El asistente de perfil (contaflow/services/perfiles.py) también se
+        # responde una sola vez antes de poder usar el resto del sistema.
+        # "contador" no tiene tope de empresas ni secciones ocultas — es el
+        # que necesita esta clase, que crea empresas y recorre rutas de
+        # todos los módulos.
+        cls.cliente.post("/bienvenida", data={"perfil": "contador"}, follow_redirects=False)
         # Las pantallas necesitan una empresa activa con su plan de cuentas.
         cls.cliente.post("/empresas/guardar", data={
             "rut": "76086428-5", "razon_social": "Empresa Web SpA",
@@ -698,6 +792,76 @@ class TestAplicacionWeb(unittest.TestCase):
             "modo_monto": "neto", "neto": "1000",
         }, follow_redirects=True)
         self.assertIn("no es válido", respuesta.text)
+
+    def test_no_se_puede_seleccionar_una_empresa_inactiva(self):
+        """P2-2: seleccionar_empresa no filtraba por Empresa.activa — un
+        POST directo con el id de una empresa dada de baja la dejaba
+        seleccionada igual."""
+        from sqlalchemy import select
+
+        from contaflow.database import SessionLocal
+        from contaflow.models import Empresa
+
+        db = SessionLocal()
+        try:
+            empresa = Empresa(rut="76222333-K", razon_social="Empresa Inactiva SpA",
+                              regimen=RegimenTributario.ART14D3, activa=False)
+            db.add(empresa)
+            db.commit()
+            empresa_id = empresa.id
+        finally:
+            db.close()
+
+        respuesta = self.cliente.post("/seleccionar-empresa", data={"empresa_id": empresa_id},
+                                      follow_redirects=True)
+        self.assertIn("no encontrada o inactiva", respuesta.text)
+
+        # Y el selector de arriba tampoco debe seguir mostrándola como activa.
+        self.assertNotIn("Empresa Inactiva SpA", respuesta.text)
+
+    def test_folio_duplicado_da_mensaje_claro_no_500(self):
+        """P1-2: cargar el mismo folio dos veces (doble clic, el mismo Excel
+        importado dos veces) debe dar un aviso de negocio, no una página de
+        error 500 con un IntegrityError crudo."""
+        self.cliente.post("/seleccionar-periodo", data={"anio": 2025, "mes": 10},
+                          follow_redirects=False)
+        datos = {
+            "tipo_dte": 33, "folio": "DUP-1", "fecha_emision": "2025-10-05",
+            "periodo_anio": 2025, "periodo_mes": 10, "entidad_rut": "77777777-7",
+            "entidad_nombre": "Cliente Duplicado", "modo_monto": "neto", "neto": "500000",
+            "exento": "0", "iva": "95000", "contabilizar": "on",
+        }
+        primera = self.cliente.post("/tributario/documentos/ventas/guardar", data=datos,
+                                     follow_redirects=False)
+        self.assertEqual(primera.status_code, 303)
+
+        segunda = self.cliente.post("/tributario/documentos/ventas/guardar", data=datos,
+                                     follow_redirects=True)
+        self.assertEqual(segunda.status_code, 200)
+        self.assertIn("Ya existe un documento", segunda.text)
+
+        from sqlalchemy import select
+
+        from contaflow.database import SessionLocal
+        from contaflow.models import Documento, Empresa
+
+        db = SessionLocal()
+        try:
+            empresa = db.scalar(select(Empresa).where(Empresa.rut == "76086428-5"))
+            cantidad = db.scalar(
+                select(Documento).where(
+                    Documento.empresa_id == empresa.id, Documento.folio == "DUP-1"
+                )
+            )
+            self.assertIsNotNone(cantidad)  # el primero sí quedó guardado
+            todos = db.scalars(
+                select(Documento).where(
+                    Documento.empresa_id == empresa.id, Documento.folio == "DUP-1"
+                )
+            ).all()
+            self.assertEqual(len(todos), 1, "no debe haber quedado un segundo documento duplicado")
+        finally:
+            db.close()
 
     def test_exportaciones(self):
         rutas = [

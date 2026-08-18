@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titulo %}Bienvenida{% endblock %}
+{% block contenido %}
+<h1>{{ '¿Qué perfil va más contigo?' if not perfil_elegido else 'Cambiar mi perfil' }}</h1>
+<p class="subtitulo">
+  Esto ajusta qué tan cargada se ve la interfaz — nunca oculta datos, solo apartados
+  que quizás no necesites por ahora. Puedes volver a cambiarlo cuando quieras.
+</p>
+
+<form method="post" action="/bienvenida">
+  <div class="panel">
+    <div class="perfiles-opciones">
+      {% for op in opciones %}
+        <label class="perfil-opcion{{ ' activo' if op.clave == perfil_elegido else '' }}">
+          <input type="radio" name="perfil" value="{{ op.clave }}"
+                 {% if op.clave == perfil_elegido %}checked{% endif %} required>
+          <strong>{{ op.etiqueta }}</strong>
+          <span>{{ op.descripcion }}</span>
+        </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if not perfil_elegido %}
+    <p class="ayuda">
+      ¿Emprendedor sin RUT de empresa todavía? No es problema — puedes usar tu propio
+      RUT de persona natural al crear tu empresa; lo cambias después cuando te formalices.
+    </p>
+  {% endif %}
+
+  <div class="acciones">
+    <button class="btn acento">{{ 'Continuar' if not perfil_elegido else 'Guardar' }}</button>
+  </div>
+</form>
+{% endblock %}

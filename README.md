@@ -24,7 +24,9 @@ a medio terminar.
 
 Cuando termine de descargar:
 
-1. Colócalo donde quieras (Escritorio, `C:\ContaFlow\`, un pendrive).
+1. Colócalo donde quieras (Escritorio, `C:\ContaFlow\`, un pendrive). El `.exe` corre
+   igual desde cualquier lado; si quieres que tus datos viajen con él en el pendrive
+   (no solo el programa), mira [Modo portable](#modo-portable-llevar-los-datos-en-el-mismo-pendrive) más abajo.
 2. Ábrelo con doble clic. **No necesitas instalar Python ni nada más.**
 3. Windows SmartScreen puede advertir porque el ejecutable no está firmado digitalmente
    (ocurre con cualquier programa sin certificado de firma comercial paga). Elige
@@ -95,13 +97,27 @@ uno propio se usa el escudo de reserva `logo-generico.svg`.
 1. Abre `ContaFlow.exe`. Se abre **en su propia ventana de escritorio**, sin
    navegador a la vista.
 2. Ingresa con **usuario `admin`, contraseña `admin`**.
-3. Cámbiala en *Configuración → Respaldos*.
-4. Crea tu primera empresa en *Empresas → Nueva empresa*. Al guardar se genera
+3. Por seguridad, el sistema te pide **cambiar esa contraseña** antes de dejarte
+   seguir — no es opcional, es el único paso obligatorio del primer arranque.
+4. Elige tu **perfil**: Emprendedor, Pyme o Contador. Esto ajusta qué tan cargada
+   se ve la interfaz — un contador con varios clientes ve todo sin restricciones;
+   un emprendedor o pyme parten con un menú más simple (se puede cambiar después
+   desde *Perfil*, en el menú lateral). Emprendedor y Pyme administran una sola
+   empresa; Contador, todas las que necesites.
+5. Crea tu primera empresa en *Empresas → Nueva empresa*. Al guardar se genera
    automáticamente el **plan de cuentas chileno completo** (más de 140 cuentas).
-5. Carga la **UF, UTM e ingreso mínimo** del año en *Maestros → Indicadores*
+   ¿Aún no tienes RUT de empresa? Puedes usar tu propio RUT de persona natural.
+6. Carga la **UF, UTM e ingreso mínimo** del año en *Maestros → Indicadores*
    (sólo necesario si vas a emitir liquidaciones de sueldo).
 
 Para cerrar el sistema, cierra la ventana.
+
+### Modo presentación
+
+Si vas a compartir pantalla con un cliente y quieres mostrarle el sistema sin
+riesgo de modificar algo por accidente, activa **Modo presentación** (botón en
+la barra superior). Todo el sistema queda en solo lectura hasta que lo
+desactives — ningún formulario guarda mientras esté activo.
 
 ### Cómo funciona por dentro
 
@@ -127,6 +143,20 @@ C:\Users\<tu usuario>\AppData\Local\ContaFlow\contaflow.db
 Ese único archivo contiene **todas** las empresas. Respáldalo desde
 *Configuración → Respaldos* o cópialo a mano. Si actualizas el `.exe`, los datos se
 conservan porque viven fuera del ejecutable.
+
+### Modo portable (llevar los datos en el mismo pendrive)
+
+Por defecto, los datos quedan en el AppData del computador donde corres el programa —
+no en el pendrive junto al `.exe`. Si conectas el pendrive en otro computador, ese otro
+equipo no tiene tus datos: arranca como si fuera la primera vez.
+
+Para que los datos viajen con el ejecutable, crea a mano una carpeta llamada **`datos`**
+en la misma carpeta donde está `ContaFlow.exe` (por ejemplo, dentro del pendrive, junto
+al `.exe`). Si esa carpeta existe, ContaFlow la usa en vez de AppData — así el `.exe` y
+sus datos quedan juntos, y puedes moverlos entre computadores sin perder nada.
+
+Si ya vienes usando ContaFlow con datos en AppData, no necesitas hacer nada: mientras no
+crees esa carpeta `datos`, todo sigue exactamente igual que antes.
 
 ### Actualizar ContaFlow
 
@@ -224,9 +254,17 @@ Se registra RUT, giro, código de actividad, representante legal, régimen tribu
 - Todo exportable a **PDF, Excel y CSV**, y con hoja de impresión limpia.
 
 ### Sistema
-- Usuarios con roles (administrador, contador, consulta).
+- Varios usuarios (todos con el mismo nivel de acceso — sirve para saber quién
+  hizo cada cambio, no para restringir).
+- **Modo presentación**: bloquea toda escritura del sistema con un clic, para
+  mostrárselo a un cliente sin riesgo de modificar algo sin querer.
+- **Perfil de instalación** (Emprendedor / Pyme / Contador): ajusta qué tan
+  cargada se ve la interfaz y cuántas empresas se pueden administrar.
+- Contraseña inicial obligatoria de cambiar, y bloqueo temporal tras varios
+  intentos fallidos de inicio de sesión.
 - Respaldos y restauración con un clic (guarda una copia del estado previo antes de
-  restaurar).
+  restaurar), con respaldo automático antes de aplicar cualquier actualización
+  que cambie la estructura de la base de datos.
 - Indicadores económicos (UF, UTM, UTA, IPC, ingreso mínimo, dólar) por mes, con
   función para copiar el año anterior como punto de partida.
 
@@ -250,7 +288,7 @@ corresponda.
 ```bash
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt httpx
-.venv/bin/python -m unittest discover -s tests -v   # 66 pruebas
+.venv/bin/python -m unittest discover -s tests -v   # 180+ pruebas
 .venv/bin/python run.py                             # levanta la app
 ```
 

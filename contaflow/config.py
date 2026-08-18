@@ -27,10 +27,34 @@ def dir_recursos() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
+def dir_datos_portable() -> Path | None:
+    """Carpeta `datos` junto al propio `.exe`, si existe.
+
+    Por defecto ContaFlow guarda todo en AppData/XDG — atado al computador,
+    no al ejecutable. Para que un `.exe` en un pendrive lleve sus datos
+    consigo entre computadores, basta con crear a mano una carpeta llamada
+    `datos` en la misma carpeta donde está `ContaFlow.exe`: si existe, se
+    usa esa en vez de AppData.
+
+    Es opt-in a propósito (la carpeta tiene que existir de antemano): así
+    una instalación ya en uso, con datos en AppData, nunca «pierde» sus
+    datos de golpe sólo por actualizar el ejecutable — seguiría sin
+    encontrar esa carpeta y usaría AppData exactamente como antes. Sólo
+    aplica al ejecutable congelado; en desarrollo (`python run.py`) no
+    tendría sentido.
+    """
+    if not es_ejecutable_congelado():
+        return None
+    carpeta = Path(sys.executable).resolve().parent / "datos"
+    return carpeta if carpeta.is_dir() else None
+
+
 def dir_datos() -> Path:
     """Carpeta de datos del usuario. Persiste entre actualizaciones del .exe."""
     if os.environ.get("CONTAFLOW_DATA"):
         base = Path(os.environ["CONTAFLOW_DATA"])
+    elif dir_datos_portable() is not None:
+        base = dir_datos_portable()
     elif os.name == "nt":
         base = Path(os.environ.get("LOCALAPPDATA", Path.home())) / APP_NAME
     else:
@@ -116,4 +140,31 @@ AFP_DEFECTO = [
 GRATIFICACION_PORCENTAJE = 0.25
 GRATIFICACION_TOPE_IMM = 4.75
 
-SESSION_SECRET = os.environ.get("CONTAFLOW_SECRET", "contaflow-local-" + str(RUTA_BD))
+def _obtener_o_crear_secreto_sesion() -> str:
+    """Clave de firma de las cookies de sesión: aleatoria y persistida.
+
+    Antes se derivaba de la ruta de la base de datos — predecible, y la
+    misma para cualquier instalación del mismo usuario de Windows. Ahora se
+    genera una sola vez con secrets.token_hex() y se guarda en un archivo
+    dentro de la carpeta de datos, para que sobreviva a que se reemplace el
+    .exe por una versión nueva.
+    """
+    import secrets
+
+    archivo = DIR_DATOS / "session.key"
+    try:
+        clave = archivo.read_text(encoding="utf-8").strip()
+        if clave:
+            return clave
+    except OSError:
+        pass
+
+    clave = secrets.token_hex(32)
+    try:
+        archivo.write_text(clave, encoding="utf-8")
+    except OSError:
+        pass  # sin permiso de escritura: mejor una clave nueva cada arranque que romper
+    return clave
+
+
+SESSION_SECRET = os.environ.get("CONTAFLOW_SECRET") or _obtener_o_crear_secreto_sesion()

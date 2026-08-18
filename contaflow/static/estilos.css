@@ -162,6 +162,17 @@ input[type=checkbox] { width: auto; }
 .checkbox input { margin: 0; }
 .ayuda { font-size: 11.5px; color: var(--suave); margin-top: 3px; }
 
+.perfiles-opciones { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.perfil-opcion {
+  display: flex; flex-direction: column; gap: 4px; padding: 14px 16px;
+  border: 1.5px solid var(--borde); border-radius: var(--radio); cursor: pointer;
+}
+.perfil-opcion:hover { border-color: var(--azul-claro); }
+.perfil-opcion.activo { border-color: var(--acento); background: #f0faf9; }
+.perfil-opcion input { margin-right: 6px; }
+.perfil-opcion strong { font-size: 14px; color: var(--azul); }
+.perfil-opcion span { font-size: 12.5px; color: var(--suave); }
+
 .acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
 .acciones.derecha { justify-content: flex-end; }
 
@@ -187,6 +198,12 @@ input[type=checkbox] { width: auto; }
 .btn.peligro:hover { background: #90201a; }
 .btn.acento { background: var(--acento); border-color: var(--acento); }
 .btn.acento:hover { background: #0b7c72; }
+.btn.presentacion.activo {
+  background: var(--warn-bg); color: var(--warn); border-color: #efe0b3;
+  animation: parpadeo-suave 2.2s ease-in-out infinite;
+}
+.btn.presentacion.activo:hover { background: #f7ecc9; color: var(--warn); }
+@keyframes parpadeo-suave { 0%, 100% { opacity: 1; } 50% { opacity: .72; } }
 
 /* ------------------------------------------------------------------ avisos */
 .aviso { padding: 10px 14px; border-radius: var(--radio); margin-bottom: 12px; font-size: 13px; border: 1px solid; }

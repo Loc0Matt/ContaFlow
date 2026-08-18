@@ -26,20 +26,38 @@
     <a href="/tributario/compras" class="{{ 'activo' if '/tributario/compras' in request.url.path }}">Compras</a>
     <a href="/tributario/honorarios" class="{{ 'activo' if '/honorarios' in request.url.path }}">Honorarios</a>
     <a href="/tributario/f29" class="{{ 'activo' if '/f29' in request.url.path }}">Formulario 29</a>
+    {% if perfil_seccion_visible('formulario_22') %}
     <a href="/tributario/f22" class="{{ 'activo' if '/f22' in request.url.path }}">Formulario 22</a>
+    {% endif %}
 
     <h4>Contabilidad</h4>
+    {% if perfil_seccion_visible('comprobantes_manuales') %}
     <a href="/contabilidad/comprobantes" class="{{ 'activo' if '/comprobantes' in request.url.path }}">Comprobantes</a>
+    {% endif %}
+    {% if perfil_seccion_visible('libro_diario') %}
     <a href="/contabilidad/diario" class="{{ 'activo' if '/diario' in request.url.path }}">Libro Diario</a>
+    {% endif %}
+    {% if perfil_seccion_visible('libro_mayor') %}
     <a href="/contabilidad/mayor" class="{{ 'activo' if '/mayor' in request.url.path }}">Libro Mayor</a>
+    {% endif %}
+    {% if perfil_seccion_visible('balance_8_columnas') %}
     <a href="/contabilidad/balance" class="{{ 'activo' if request.url.path == '/contabilidad/balance' }}">Balance 8 columnas</a>
+    {% endif %}
+    {% if perfil_seccion_visible('conciliacion_bancaria') %}
     <a href="/contabilidad/conciliacion" class="{{ 'activo' if '/conciliacion' in request.url.path }}">Conciliación bancaria</a>
+    {% endif %}
+    {% if perfil_seccion_visible('periodos_cierre') %}
     <a href="/contabilidad/periodos" class="{{ 'activo' if '/periodos' in request.url.path }}">Períodos y cierre</a>
+    {% endif %}
 
     <h4>Informes</h4>
     <a href="/informes/resultados" class="{{ 'activo' if '/resultados' in request.url.path }}">Estado de Resultados</a>
+    {% if perfil_seccion_visible('situacion_financiera') %}
     <a href="/informes/balance-general" class="{{ 'activo' if '/balance-general' in request.url.path }}">Situación Financiera</a>
+    {% endif %}
+    {% if perfil_seccion_visible('analisis_cuentas') %}
     <a href="/informes/analisis" class="{{ 'activo' if '/analisis' in request.url.path }}">Análisis de cuentas</a>
+    {% endif %}
 
     <h4>Remuneraciones</h4>
     <a href="/remuneraciones/trabajadores" class="{{ 'activo' if '/trabajadores' in request.url.path }}">Trabajadores</a>
@@ -48,10 +66,14 @@
     <a href="/remuneraciones/finiquito" class="{{ 'activo' if '/finiquito' in request.url.path }}">Finiquitos</a>
 
     <h4>Maestros</h4>
+    {% if perfil_seccion_visible('activo_fijo') %}
     <a href="/activo-fijo" class="{{ 'activo' if '/activo-fijo' in request.url.path }}">Activo fijo</a>
+    {% endif %}
     <a href="/maestros/cuentas" class="{{ 'activo' if '/maestros/cuentas' in request.url.path }}">Plan de cuentas</a>
     <a href="/maestros/entidades" class="{{ 'activo' if '/entidades' in request.url.path }}">Clientes y proveedores</a>
+    {% if perfil_seccion_visible('centros_costo') %}
     <a href="/maestros/centros-costo" class="{{ 'activo' if '/centros-costo' in request.url.path }}">Centros de costo</a>
+    {% endif %}
     <a href="/maestros/indicadores" class="{{ 'activo' if '/indicadores' in request.url.path }}">Indicadores (UF/UTM)</a>
 
     <h4>Sistema</h4>
@@ -60,6 +82,7 @@
     <a href="/configuracion/parametros" class="{{ 'activo' if '/parametros' in request.url.path }}">Parámetros</a>
     <a href="/configuracion/usuarios" class="{{ 'activo' if '/usuarios' in request.url.path }}">Usuarios</a>
     <a href="/configuracion/respaldos" class="{{ 'activo' if '/respaldos' in request.url.path }}">Respaldos</a>
+    <a href="/bienvenida" class="{{ 'activo' if request.url.path == '/bienvenida' }}">Perfil</a>
   </nav>
 
   <div class="principal">
@@ -91,7 +114,18 @@
 
       <div class="espacio"></div>
       {% if usuario %}
-        <span class="usuario">{{ usuario.nombre }} · {{ usuario.rol.value | lower }}</span>
+        <form method="post" action="/modo-presentacion/alternar" style="margin:0">
+          {% if modo_presentacion_activo %}
+            <button class="btn mini presentacion activo" title="El sistema está en solo lectura. Haz clic para volver a poder editar.">
+              🔒 Modo presentación — solo lectura
+            </button>
+          {% else %}
+            <button class="btn sec mini presentacion" title="Bloquea toda escritura, para mostrarle el sistema a un cliente sin riesgo.">
+              Modo presentación
+            </button>
+          {% endif %}
+        </form>
+        <span class="usuario">{{ usuario.nombre }}</span>
         <a class="btn sec mini" href="/logout">Salir</a>
       {% endif %}
     </header>

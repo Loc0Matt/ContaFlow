@@ -11,7 +11,7 @@ from contaflow.database import get_db
 from contaflow.models import (
     CentroCosto, ClaseDocumento, Cuenta, Documento, Entidad, Honorario, TipoCompra, TipoDTE,
 )
-from contaflow.services.contabilidad import ErrorContable
+from contaflow.services.contabilidad import ErrorContable, capturar_integridad
 from contaflow.services.documentos import (
     calcular_iva, generar_asiento_documento, generar_asiento_honorario, neto_desde_total,
     obtener_o_crear_entidad, totalizar,
@@ -172,7 +172,15 @@ async def guardar_documento(ruta: str, request: Request, db: Session = Depends(g
     documento.ref_fecha = parse_fecha(form.get("ref_fecha"))
     documento.ref_razon = (form.get("ref_razon") or "").strip() or None
     documento.observacion = (form.get("observacion") or "").strip() or None
-    db.commit()
+    mensaje_choque = (
+        f"Ya existe un documento tipo {tipo_dte} folio {documento.folio} para "
+        f"{documento.entidad_rut} en esta empresa. Revisa si ya estaba cargado."
+    )
+    try:
+        with capturar_integridad(db, mensaje_choque):
+            db.commit()
+    except ErrorContable as exc:
+        return redirigir(f"/tributario/documentos/{ruta}/nuevo", request, str(exc), "error")
 
     if form.get("contabilizar", "on") == "on":
         try:

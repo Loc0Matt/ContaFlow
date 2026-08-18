@@ -12,11 +12,11 @@ from contaflow.config import (
     TASA_SIS_EMPLEADOR, TOPE_IMPONIBLE_AFC_UF, TOPE_IMPONIBLE_AFP_UF,
 )
 from contaflow.database import get_db
-from contaflow.models import AFP, Cuenta, Parametro, RolUsuario, Usuario
+from contaflow.models import AFP, Cuenta, Parametro, Usuario
 from contaflow.services.exportar import crear_respaldo, listar_respaldos, restaurar_respaldo
 from contaflow.services.plan_cuentas import CUENTAS_DEFECTO
 from contaflow.services.remuneraciones import ASIGNACION_FAMILIAR
-from contaflow.services.seguridad import hash_password
+from contaflow.services.seguridad import hash_password, validar_password, verificar_password
 from contaflow.web import decimal, entero, exigir_empresa, redirigir, render, usuario_actual
 
 router = APIRouter(prefix="/configuracion")
@@ -114,12 +114,8 @@ async def guardar_parametros(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/usuarios")
 def usuarios(request: Request, db: Session = Depends(get_db)):
-    actual = usuario_actual(request, db)
-    if actual is None or actual.rol != RolUsuario.ADMIN:
-        return redirigir("/", request, "Sólo un administrador puede gestionar usuarios.", "error")
     return render(request, "configuracion/usuarios.html", {
         "lista": db.scalars(select(Usuario).order_by(Usuario.username)).all(),
-        "roles": list(RolUsuario),
     })
 
 
@@ -127,13 +123,8 @@ def usuarios(request: Request, db: Session = Depends(get_db)):
 def guardar_usuario(
     request: Request, db: Session = Depends(get_db),
     usuario_id: str = Form(""), username: str = Form(...), nombre: str = Form(...),
-    email: str = Form(""), password: str = Form(""), rol: str = Form("CONTADOR"),
-    activo: str = Form("on"),
+    email: str = Form(""), password: str = Form(""), activo: str = Form("on"),
 ):
-    actual = usuario_actual(request, db)
-    if actual is None or actual.rol != RolUsuario.ADMIN:
-        return redirigir("/", request, "Acción no permitida.", "error")
-
     username = username.strip().lower()
     usuario = db.get(Usuario, int(usuario_id)) if usuario_id else None
     existente = db.scalar(select(Usuario).where(Usuario.username == username))
@@ -145,13 +136,19 @@ def guardar_usuario(
         if not password:
             return redirigir("/configuracion/usuarios", request,
                              "Indica una contraseña para el usuario nuevo.", "error")
+
+    if password:
+        error = validar_password(password)
+        if error:
+            return redirigir("/configuracion/usuarios", request, error, "error")
+
+    if usuario is None:
         usuario = Usuario(username=username, nombre=nombre, password_hash=hash_password(password))
         db.add(usuario)
 
     usuario.username = username
     usuario.nombre = nombre.strip()
     usuario.email = email.strip() or None
-    usuario.rol = RolUsuario(rol)
     usuario.activo = activo == "on"
     if password:
         usuario.password_hash = hash_password(password)
@@ -164,17 +161,16 @@ def cambiar_password(
     request: Request, db: Session = Depends(get_db),
     password_actual: str = Form(...), password_nueva: str = Form(...),
 ):
-    from contaflow.services.seguridad import verificar_password
-
     usuario = usuario_actual(request, db)
     if usuario is None:
         return redirigir("/login")
     if not verificar_password(password_actual, usuario.password_hash):
         return redirigir("/configuracion/respaldos", request, "La contraseña actual no coincide.", "error")
-    if len(password_nueva) < 4:
-        return redirigir("/configuracion/respaldos", request,
-                         "La nueva contraseña es demasiado corta.", "error")
+    error = validar_password(password_nueva)
+    if error:
+        return redirigir("/configuracion/respaldos", request, error, "error")
     usuario.password_hash = hash_password(password_nueva)
+    usuario.debe_cambiar_password = False
     db.commit()
     return redirigir("/configuracion/respaldos", request, "Contraseña actualizada.")
 

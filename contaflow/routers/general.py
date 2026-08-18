@@ -1,7 +1,7 @@
 """Autenticación, panel principal y cambio de empresa/período."""
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Form, Request
 from sqlalchemy import func, select
@@ -11,9 +11,10 @@ from contaflow.database import get_db
 from contaflow.models import (
     ClaseDocumento, Comprobante, Documento, Empresa, EstadoComprobante, Trabajador, Usuario,
 )
+from contaflow.services import modo_presentacion, perfiles
 from contaflow.services.contabilidad import estado_resultados, saldos
 from contaflow.services.formularios import generar_f29
-from contaflow.services.seguridad import verificar_password
+from contaflow.services.seguridad import cuenta_bloqueada, registrar_intento_fallido, verificar_password
 from contaflow.services.utils import pesos, rango_mes
 from contaflow.web import empresa_actual, entero, redirigir, render, usuario_actual
 
@@ -33,8 +34,26 @@ def procesar_login(
     db: Session = Depends(get_db),
 ):
     usuario = db.scalar(select(Usuario).where(Usuario.username == username.strip().lower()))
+
+    # Cuenta bloqueada: se rechaza sin siquiera mirar la contraseña, para no
+    # dar información extra ni sumar otro intento mientras dura el bloqueo.
+    if usuario is not None and cuenta_bloqueada(usuario.bloqueado_hasta):
+        minutos = max(1, int((usuario.bloqueado_hasta - datetime.now()).total_seconds() // 60) + 1)
+        return render(request, "login.html", {
+            "error": f"Demasiados intentos fallidos. Vuelve a intentar en {minutos} minuto(s).",
+        })
+
     if usuario is None or not usuario.activo or not verificar_password(password, usuario.password_hash):
+        if usuario is not None and usuario.activo:
+            usuario.intentos_fallidos, usuario.bloqueado_hasta = registrar_intento_fallido(
+                usuario.intentos_fallidos
+            )
+            db.commit()
         return render(request, "login.html", {"error": "Usuario o contraseña incorrectos."})
+
+    usuario.intentos_fallidos = 0
+    usuario.bloqueado_hasta = None
+    db.commit()
     request.session["usuario_id"] = usuario.id
     return redirigir("/", request, f"Bienvenido, {usuario.nombre}.")
 
@@ -129,9 +148,9 @@ def panel(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/seleccionar-empresa")
 def seleccionar_empresa(request: Request, empresa_id: int = Form(...), db: Session = Depends(get_db)):
-    empresa = db.get(Empresa, empresa_id)
+    empresa = db.scalar(select(Empresa).where(Empresa.id == empresa_id, Empresa.activa.is_(True)))
     if empresa is None:
-        return redirigir("/", request, "Empresa no encontrada.", "error")
+        return redirigir("/", request, "Empresa no encontrada o inactiva.", "error")
     request.session["empresa_id"] = empresa.id
     destino = request.headers.get("referer", "/")
     return redirigir(destino, request, f"Trabajando en {empresa.razon_social}.")
@@ -145,3 +164,44 @@ def seleccionar_periodo(
     request.session["mes"] = max(1, min(12, entero(mes, date.today().month)))
     destino = request.headers.get("referer", "/")
     return redirigir(destino)
+
+
+@router.post("/modo-presentacion/alternar")
+def alternar_modo_presentacion(request: Request, db: Session = Depends(get_db)):
+    activo = modo_presentacion.alternar(db)
+    texto = (
+        "Modo presentación activado: el sistema queda en solo lectura."
+        if activo else
+        "Modo presentación desactivado: ya puedes guardar cambios de nuevo."
+    )
+    destino = request.headers.get("referer", "/")
+    return redirigir(destino, request, texto, "warn" if activo else "ok")
+
+
+@router.get("/bienvenida")
+def bienvenida(request: Request, db: Session = Depends(get_db)):
+    """Asistente de perfil: qué tan cargada se ve la interfaz.
+
+    Se responde una sola vez, al abrir ContaFlow por primera vez — el
+    middleware redirige acá mientras no haya perfil elegido. La misma
+    pantalla sirve después para cambiarlo desde Configuración → Perfil.
+    """
+    return render(request, "bienvenida.html", {
+        "opciones": [
+            {"clave": p, "etiqueta": perfiles.ETIQUETAS[p], "descripcion": perfiles.DESCRIPCIONES[p]}
+            for p in perfiles.PERFILES
+        ],
+        "perfil_elegido": perfiles.perfil_actual(db),
+    })
+
+
+@router.post("/bienvenida")
+def guardar_bienvenida(request: Request, perfil: str = Form(...), db: Session = Depends(get_db)):
+    if perfil not in perfiles.PERFILES:
+        return redirigir("/bienvenida", request, "Elige una opción válida.", "error")
+    era_el_primer_uso = perfiles.perfil_actual(db) is None
+    perfiles.elegir_perfil(db, perfil)
+    if era_el_primer_uso:
+        return redirigir("/empresas/nueva", request,
+                         f"Perfil «{perfiles.ETIQUETAS[perfil]}» guardado. Ahora crea tu primera empresa.")
+    return redirigir("/", request, f"Perfil «{perfiles.ETIQUETAS[perfil]}» actualizado.")
