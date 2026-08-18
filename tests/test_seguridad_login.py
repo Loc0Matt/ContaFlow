@@ -65,13 +65,17 @@ class TestFlujoHTTP(unittest.TestCase):
         # la contraseña puede ejecutarse antes que otra que asume "admin".
         # Se deja el admin en un estado conocido al empezar cada prueba, sin
         # importar qué haya dejado la anterior ni en qué orden corran.
-        from contaflow.services import modo_presentacion
+        from contaflow.services import modo_presentacion, perfiles
 
         with SessionLocal() as db:
-            # Idem con el modo presentación: es un flag global compartido,
-            # y otra clase (de este archivo o de otro) puede haberlo dejado
-            # activo si alguna de sus pruebas terminó antes de desactivarlo.
+            # Idem con el modo presentación y el perfil de instalación: son
+            # flags globales compartidos, y otra clase (de este archivo o de
+            # otro) puede haberlos dejado en un estado que estas pruebas no
+            # esperan. "contador" para que, una vez cambiada la contraseña,
+            # no aparezca de sorpresa el asistente de perfil bloqueando la
+            # navegación que las pruebas dan por libre.
             modo_presentacion.desactivar(db)
+            perfiles.elegir_perfil(db, "contador")
             admin = db.scalar(select(Usuario).where(Usuario.username == "admin"))
             if admin is not None:
                 admin.password_hash = hash_password("admin")

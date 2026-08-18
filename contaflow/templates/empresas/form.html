@@ -13,7 +13,13 @@
       <div class="campo">
         <label for="rut">RUT *</label>
         <input id="rut" name="rut" value="{{ registro.rut if registro else '' }}" placeholder="76.123.456-7" required>
-        <div class="ayuda">Se valida el dígito verificador (módulo 11).</div>
+        <div class="ayuda">
+          Se valida el dígito verificador (módulo 11).
+          {% if not registro and perfil_actual in ('emprendedor', 'pyme') %}
+            ¿Aún no tienes RUT de empresa? Puedes usar tu propio RUT de persona natural
+            por ahora — lo cambias después cuando te formalices.
+          {% endif %}
+        </div>
       </div>
       <div class="campo"><label>Razón social *</label>
         <input name="razon_social" value="{{ registro.razon_social if registro else '' }}" required></div>

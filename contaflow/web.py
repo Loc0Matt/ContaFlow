@@ -77,12 +77,13 @@ def render(
     """Renderiza una plantilla añadiendo el contexto común de la aplicación."""
     from contaflow.database import SessionLocal
 
-    from contaflow.services import modo_presentacion
+    from contaflow.services import modo_presentacion, perfiles
 
     datos: dict[str, Any] = {}
     db = SessionLocal()
     try:
         anio, mes = periodo_sesion(request)
+        perfil = perfiles.perfil_actual(db)
         datos.update(
             usuario=usuario_actual(request, db),
             empresa=empresa_actual(request, db),
@@ -93,6 +94,8 @@ def render(
             mes_activo=mes,
             mensajes=consumir_mensajes(request),
             modo_presentacion_activo=modo_presentacion.esta_activo(db),
+            perfil_actual=perfil,
+            perfil_seccion_visible=lambda seccion: perfiles.visible(seccion, perfil),
         )
     finally:
         db.close()

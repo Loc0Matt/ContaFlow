@@ -87,6 +87,8 @@ class TestBloqueoHTTP(unittest.TestCase):
             from contaflow.models import Usuario
             from contaflow.services.seguridad import hash_password
 
+            from contaflow.services import perfiles
+
             mp.desactivar(db)
             admin = db.scalar(select(Usuario).where(Usuario.username == "admin"))
             admin.password_hash = hash_password("admin")
@@ -94,6 +96,9 @@ class TestBloqueoHTTP(unittest.TestCase):
             admin.intentos_fallidos = 0
             admin.bloqueado_hasta = None
             db.commit()
+            # "contador": sin tope de empresas, o la que se crea más abajo
+            # podría chocar con el tope de emprendedor/pyme (1 sola).
+            perfiles.elegir_perfil(db, "contador")
 
         cls.cliente = cliente_provisorio
         r = cls.cliente.post("/login", data={"username": "admin", "password": "admin"},

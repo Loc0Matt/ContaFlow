@@ -677,6 +677,12 @@ class TestAplicacionWeb(unittest.TestCase):
         cls.cliente.post("/configuracion/cambiar-password", data={
             "password_actual": "admin", "password_nueva": "una-clave-de-prueba-larga",
         }, follow_redirects=False)
+        # El asistente de perfil (contaflow/services/perfiles.py) también se
+        # responde una sola vez antes de poder usar el resto del sistema.
+        # "contador" no tiene tope de empresas ni secciones ocultas — es el
+        # que necesita esta clase, que crea empresas y recorre rutas de
+        # todos los módulos.
+        cls.cliente.post("/bienvenida", data={"perfil": "contador"}, follow_redirects=False)
         # Las pantallas necesitan una empresa activa con su plan de cuentas.
         cls.cliente.post("/empresas/guardar", data={
             "rut": "76086428-5", "razon_social": "Empresa Web SpA",

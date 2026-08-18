@@ -16,7 +16,7 @@ from contaflow.routers import (
     activofijo, configuracion, contabilidad, empresas, general, informes, maestros, remuneraciones,
     tributario,
 )
-from contaflow.services import modo_presentacion
+from contaflow.services import modo_presentacion, perfiles
 from contaflow.services.contabilidad import ErrorContable
 from contaflow.services.seed import sembrar_globales
 from contaflow.web import SinEmpresa, redirigir, render
@@ -38,6 +38,10 @@ RUTAS_ESCRITURA_SIEMPRE_PERMITIDA = {
 #: todavía la conserva). Sin esto no habría forma de llegar al formulario
 #: que justamente permite cumplir con el cambio.
 RUTAS_CAMBIO_PASSWORD_PERMITIDAS = {"/configuracion/respaldos", "/configuracion/cambiar-password"}
+
+#: Única ruta alcanzable mientras no se haya respondido el asistente de
+#: perfil inicial (o mientras se lo esté volviendo a abrir para cambiarlo).
+RUTAS_PERFIL_PERMITIDAS = {"/bienvenida"}
 
 
 def crear_app() -> FastAPI:
@@ -72,6 +76,16 @@ def crear_app() -> FastAPI:
                         "Por seguridad, cambia tu contraseña antes de seguir usando el sistema.",
                         "warn",
                     )
+
+        # Asistente de perfil inicial: se responde una sola vez, antes de
+        # crear la primera empresa. Va después del cambio de contraseña
+        # (primero seguridad, después producto) y antes del modo
+        # presentación (si no, una instalación nueva que activara el modo
+        # presentación sin haber elegido perfil quedaría sin salida).
+        if ruta not in RUTAS_CAMBIO_PASSWORD_PERMITIDAS and ruta not in RUTAS_PERFIL_PERMITIDAS:
+            with SessionLocal() as db:
+                if perfiles.perfil_actual(db) is None:
+                    return RedirectResponse("/bienvenida", status_code=303)
 
         # Modo presentación: bloquea cualquier escritura, sin excepción salvo
         # la lista de arriba. Se revisa acá (y no con un Depends por endpoint)

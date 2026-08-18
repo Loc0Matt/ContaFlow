@@ -97,13 +97,27 @@ uno propio se usa el escudo de reserva `logo-generico.svg`.
 1. Abre `ContaFlow.exe`. Se abre **en su propia ventana de escritorio**, sin
    navegador a la vista.
 2. Ingresa con **usuario `admin`, contraseña `admin`**.
-3. Cámbiala en *Configuración → Respaldos*.
-4. Crea tu primera empresa en *Empresas → Nueva empresa*. Al guardar se genera
+3. Por seguridad, el sistema te pide **cambiar esa contraseña** antes de dejarte
+   seguir — no es opcional, es el único paso obligatorio del primer arranque.
+4. Elige tu **perfil**: Emprendedor, Pyme o Contador. Esto ajusta qué tan cargada
+   se ve la interfaz — un contador con varios clientes ve todo sin restricciones;
+   un emprendedor o pyme parten con un menú más simple (se puede cambiar después
+   desde *Perfil*, en el menú lateral). Emprendedor y Pyme administran una sola
+   empresa; Contador, todas las que necesites.
+5. Crea tu primera empresa en *Empresas → Nueva empresa*. Al guardar se genera
    automáticamente el **plan de cuentas chileno completo** (más de 140 cuentas).
-5. Carga la **UF, UTM e ingreso mínimo** del año en *Maestros → Indicadores*
+   ¿Aún no tienes RUT de empresa? Puedes usar tu propio RUT de persona natural.
+6. Carga la **UF, UTM e ingreso mínimo** del año en *Maestros → Indicadores*
    (sólo necesario si vas a emitir liquidaciones de sueldo).
 
 Para cerrar el sistema, cierra la ventana.
+
+### Modo presentación
+
+Si vas a compartir pantalla con un cliente y quieres mostrarle el sistema sin
+riesgo de modificar algo por accidente, activa **Modo presentación** (botón en
+la barra superior). Todo el sistema queda en solo lectura hasta que lo
+desactives — ningún formulario guarda mientras esté activo.
 
 ### Cómo funciona por dentro
 
@@ -240,9 +254,17 @@ Se registra RUT, giro, código de actividad, representante legal, régimen tribu
 - Todo exportable a **PDF, Excel y CSV**, y con hoja de impresión limpia.
 
 ### Sistema
-- Usuarios con roles (administrador, contador, consulta).
+- Varios usuarios (todos con el mismo nivel de acceso — sirve para saber quién
+  hizo cada cambio, no para restringir).
+- **Modo presentación**: bloquea toda escritura del sistema con un clic, para
+  mostrárselo a un cliente sin riesgo de modificar algo sin querer.
+- **Perfil de instalación** (Emprendedor / Pyme / Contador): ajusta qué tan
+  cargada se ve la interfaz y cuántas empresas se pueden administrar.
+- Contraseña inicial obligatoria de cambiar, y bloqueo temporal tras varios
+  intentos fallidos de inicio de sesión.
 - Respaldos y restauración con un clic (guarda una copia del estado previo antes de
-  restaurar).
+  restaurar), con respaldo automático antes de aplicar cualquier actualización
+  que cambie la estructura de la base de datos.
 - Indicadores económicos (UF, UTM, UTA, IPC, ingreso mínimo, dólar) por mes, con
   función para copiar el año anterior como punto de partida.
 
@@ -266,7 +288,7 @@ corresponda.
 ```bash
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt httpx
-.venv/bin/python -m unittest discover -s tests -v   # 66 pruebas
+.venv/bin/python -m unittest discover -s tests -v   # 180+ pruebas
 .venv/bin/python run.py                             # levanta la app
 ```
 

@@ -11,7 +11,7 @@ from contaflow.database import get_db
 from contaflow.models import (
     ClaseDocumento, Comprobante, Documento, Empresa, EstadoComprobante, Trabajador, Usuario,
 )
-from contaflow.services import modo_presentacion
+from contaflow.services import modo_presentacion, perfiles
 from contaflow.services.contabilidad import estado_resultados, saldos
 from contaflow.services.formularios import generar_f29
 from contaflow.services.seguridad import cuenta_bloqueada, registrar_intento_fallido, verificar_password
@@ -176,3 +176,32 @@ def alternar_modo_presentacion(request: Request, db: Session = Depends(get_db)):
     )
     destino = request.headers.get("referer", "/")
     return redirigir(destino, request, texto, "warn" if activo else "ok")
+
+
+@router.get("/bienvenida")
+def bienvenida(request: Request, db: Session = Depends(get_db)):
+    """Asistente de perfil: qué tan cargada se ve la interfaz.
+
+    Se responde una sola vez, al abrir ContaFlow por primera vez — el
+    middleware redirige acá mientras no haya perfil elegido. La misma
+    pantalla sirve después para cambiarlo desde Configuración → Perfil.
+    """
+    return render(request, "bienvenida.html", {
+        "opciones": [
+            {"clave": p, "etiqueta": perfiles.ETIQUETAS[p], "descripcion": perfiles.DESCRIPCIONES[p]}
+            for p in perfiles.PERFILES
+        ],
+        "perfil_elegido": perfiles.perfil_actual(db),
+    })
+
+
+@router.post("/bienvenida")
+def guardar_bienvenida(request: Request, perfil: str = Form(...), db: Session = Depends(get_db)):
+    if perfil not in perfiles.PERFILES:
+        return redirigir("/bienvenida", request, "Elige una opción válida.", "error")
+    era_el_primer_uso = perfiles.perfil_actual(db) is None
+    perfiles.elegir_perfil(db, perfil)
+    if era_el_primer_uso:
+        return redirigir("/empresas/nueva", request,
+                         f"Perfil «{perfiles.ETIQUETAS[perfil]}» guardado. Ahora crea tu primera empresa.")
+    return redirigir("/", request, f"Perfil «{perfiles.ETIQUETAS[perfil]}» actualizado.")

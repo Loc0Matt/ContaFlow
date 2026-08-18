@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Form, Request
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from contaflow.database import get_db
 from contaflow.models import Empresa, RegimenTributario
+from contaflow.services import perfiles
 from contaflow.services.seed import sembrar_empresa
 from contaflow.services.utils import normalizar_rut, parse_fecha, rut_valido
 from contaflow.web import decimal, redirigir, render
@@ -70,6 +71,18 @@ def guardar(
 
     nueva_empresa = empresa is None
     if nueva_empresa:
+        tope = perfiles.tope_empresas(perfiles.perfil_actual(db))
+        if tope is not None:
+            cantidad = db.scalar(
+                select(func.count()).select_from(Empresa).where(Empresa.activa.is_(True))
+            ) or 0
+            if cantidad >= tope:
+                return redirigir(
+                    "/empresas", request,
+                    f"Tu perfil actual sólo permite {tope} empresa(s) activa(s). "
+                    "Cambia tu perfil a «Contador» en el menú Perfil si necesitas administrar más.",
+                    "error",
+                )
         empresa = Empresa(rut=rut_norm)
         db.add(empresa)
 
