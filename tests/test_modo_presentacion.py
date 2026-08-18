@@ -74,9 +74,31 @@ class TestBloqueoHTTP(unittest.TestCase):
         from contaflow.app import crear_app
         from contaflow.models import Empresa, RegimenTributario
 
-        cls.cliente = TestClient(crear_app())
-        r = cls.cliente.post("/login", data={"username": "admin", "password": "admin"})
-        assert r.status_code in (200, 303)
+        cliente_provisorio = TestClient(crear_app())
+
+        # Otros archivos de prueba corridos en el mismo proceso (unittest
+        # discover) pueden compartir esta misma base de datos si nadie fijó
+        # CONTAFLOW_DATA antes que ellos — así que antes de intentar el
+        # login se deja al admin en un estado conocido por las malas
+        # (directo en la base), sin asumir que sigue en admin/admin.
+        with SessionLocal() as db:
+            from sqlalchemy import select
+
+            from contaflow.models import Usuario
+            from contaflow.services.seguridad import hash_password
+
+            mp.desactivar(db)
+            admin = db.scalar(select(Usuario).where(Usuario.username == "admin"))
+            admin.password_hash = hash_password("admin")
+            admin.debe_cambiar_password = False
+            admin.intentos_fallidos = 0
+            admin.bloqueado_hasta = None
+            db.commit()
+
+        cls.cliente = cliente_provisorio
+        r = cls.cliente.post("/login", data={"username": "admin", "password": "admin"},
+                             follow_redirects=False)
+        assert r.status_code == 303, f"login de setUpClass falló: {r.status_code} {r.text[:200]}"
 
         # Al menos una empresa, o exigir_empresa() interrumpe cualquier POST
         # con "sin_empresa.html" antes de que el bloqueo entre a jugar.

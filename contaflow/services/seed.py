@@ -39,6 +39,7 @@ def sembrar_globales(db: Session) -> None:
             username="admin",
             nombre="Administrador",
             password_hash=hash_password("admin"),
+            debe_cambiar_password=True,
         ))
     db.commit()
 

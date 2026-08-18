@@ -101,10 +101,31 @@ def quitar_columna_si_existe(conn: Connection, tabla: str, columna: str) -> None
 # haya salido a producción, o las instalaciones que ya la aplicaron y las
 # que la van a aplicar por primera vez quedarían con historias distintas.
 # ---------------------------------------------------------------------------
+def _agregar_columnas_seguridad_login(conn: Connection) -> None:
+    agregar_columna_si_falta(conn, "usuario", "debe_cambiar_password", "BOOLEAN NOT NULL DEFAULT 0")
+    agregar_columna_si_falta(conn, "usuario", "intentos_fallidos", "INTEGER NOT NULL DEFAULT 0")
+    agregar_columna_si_falta(conn, "usuario", "bloqueado_hasta", "DATETIME")
+
+    # Sólo se marca para cambio obligatorio a quien todavía tiene la
+    # contraseña por defecto ("admin") — no molesta a quien ya la cambió.
+    from contaflow.services.seguridad import verificar_password
+
+    for id_, hash_ in conn.execute(text("SELECT id, password_hash FROM usuario")).fetchall():
+        if hash_ and verificar_password("admin", hash_):
+            conn.execute(
+                text("UPDATE usuario SET debe_cambiar_password = 1 WHERE id = :id"),
+                {"id": id_},
+            )
+
+
 MIGRACIONES: tuple[Migracion, ...] = (
     Migracion(
         1, "Quita Usuario.rol (se elimina el sistema de roles)",
         lambda conn: quitar_columna_si_existe(conn, "usuario", "rol"),
+    ),
+    Migracion(
+        2, "Agrega cambio de password obligatorio y límite de intentos de login",
+        _agregar_columnas_seguridad_login,
     ),
 )
 

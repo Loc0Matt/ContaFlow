@@ -1,7 +1,7 @@
 """Autenticación, panel principal y cambio de empresa/período."""
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Form, Request
 from sqlalchemy import func, select
@@ -14,7 +14,7 @@ from contaflow.models import (
 from contaflow.services import modo_presentacion
 from contaflow.services.contabilidad import estado_resultados, saldos
 from contaflow.services.formularios import generar_f29
-from contaflow.services.seguridad import verificar_password
+from contaflow.services.seguridad import cuenta_bloqueada, registrar_intento_fallido, verificar_password
 from contaflow.services.utils import pesos, rango_mes
 from contaflow.web import empresa_actual, entero, redirigir, render, usuario_actual
 
@@ -34,8 +34,26 @@ def procesar_login(
     db: Session = Depends(get_db),
 ):
     usuario = db.scalar(select(Usuario).where(Usuario.username == username.strip().lower()))
+
+    # Cuenta bloqueada: se rechaza sin siquiera mirar la contraseña, para no
+    # dar información extra ni sumar otro intento mientras dura el bloqueo.
+    if usuario is not None and cuenta_bloqueada(usuario.bloqueado_hasta):
+        minutos = max(1, int((usuario.bloqueado_hasta - datetime.now()).total_seconds() // 60) + 1)
+        return render(request, "login.html", {
+            "error": f"Demasiados intentos fallidos. Vuelve a intentar en {minutos} minuto(s).",
+        })
+
     if usuario is None or not usuario.activo or not verificar_password(password, usuario.password_hash):
+        if usuario is not None and usuario.activo:
+            usuario.intentos_fallidos, usuario.bloqueado_hasta = registrar_intento_fallido(
+                usuario.intentos_fallidos
+            )
+            db.commit()
         return render(request, "login.html", {"error": "Usuario o contraseña incorrectos."})
+
+    usuario.intentos_fallidos = 0
+    usuario.bloqueado_hasta = None
+    db.commit()
     request.session["usuario_id"] = usuario.id
     return redirigir("/", request, f"Bienvenido, {usuario.nombre}.")
 

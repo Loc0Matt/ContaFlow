@@ -4,6 +4,26 @@
 <h1>Respaldos y seguridad</h1>
 <p class="subtitulo">Tus datos viven en un único archivo SQLite dentro de <span class="mono">{{ carpeta }}</span></p>
 
+{% if usuario and usuario.debe_cambiar_password %}
+<div class="aviso warn">
+  <strong>Por seguridad, cambia tu contraseña antes de seguir.</strong>
+  Tu cuenta todavía usa la contraseña con la que arranca el sistema — cámbiala
+  en el formulario de abajo para poder usar el resto de ContaFlow.
+</div>
+{% endif %}
+
+<div class="panel">
+  <h3>Cambiar mi contraseña</h3>
+  <form method="post" action="/configuracion/cambiar-password">
+    <div class="campos">
+      <div class="campo"><label>Contraseña actual</label><input type="password" name="password_actual" required></div>
+      <div class="campo"><label>Nueva contraseña</label><input type="password" name="password_nueva" required minlength="8"></div>
+    </div>
+    <div class="ayuda">Mínimo 8 caracteres.</div>
+    <div class="acciones"><button class="btn">Cambiar contraseña</button></div>
+  </form>
+</div>
+
 <div class="panel">
   <h3>Versión</h3>
   <p class="ayuda">
@@ -50,16 +70,5 @@
       {% endfor %}
     </tbody>
   </table>
-</div>
-
-<div class="panel">
-  <h3>Cambiar mi contraseña</h3>
-  <form method="post" action="/configuracion/cambiar-password">
-    <div class="campos">
-      <div class="campo"><label>Contraseña actual</label><input type="password" name="password_actual" required></div>
-      <div class="campo"><label>Nueva contraseña</label><input type="password" name="password_nueva" required></div>
-    </div>
-    <div class="acciones"><button class="btn">Cambiar contraseña</button></div>
-  </form>
 </div>
 {% endblock %}

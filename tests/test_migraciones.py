@@ -276,11 +276,14 @@ class TestMigracionDeUsuarioRol(unittest.TestCase):
     esa columna obsoleta."""
 
     def _base_como_v1_0_0(self):
-        """Arma el esquema actual y le vuelve a agregar `rol` a mano, como
-        si fuera una base creada con la versión publicada."""
+        """Arma el esquema actual, le vuelve a agregar `rol` a mano y le
+        quita las columnas que todavía no existían — como si fuera una base
+        creada con la versión publicada."""
         engine = _motor_con_esquema()
         with engine.begin() as conn:
             m.agregar_columna_si_falta(conn, "usuario", "rol", "VARCHAR(20) NOT NULL DEFAULT 'ADMIN'")
+            for columna in ("debe_cambiar_password", "intentos_fallidos", "bloqueado_hasta"):
+                m.quitar_columna_si_existe(conn, "usuario", columna)
         return engine
 
     def test_migrar_quita_rol_y_el_usuario_sigue_operable(self):

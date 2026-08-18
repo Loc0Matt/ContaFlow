@@ -619,6 +619,12 @@ class TestAplicacionWeb(unittest.TestCase):
         cls.cliente = TestClient(crear_app())
         cls.cliente.post("/login", data={"username": "admin", "password": "admin"},
                          follow_redirects=False)
+        # El admin sembrado exige cambiar la contraseña por defecto antes de
+        # poder usar el resto del sistema (P1-4) — igual que haría cualquier
+        # persona la primera vez que abre ContaFlow.
+        cls.cliente.post("/configuracion/cambiar-password", data={
+            "password_actual": "admin", "password_nueva": "una-clave-de-prueba-larga",
+        }, follow_redirects=False)
         # Las pantallas necesitan una empresa activa con su plan de cuentas.
         cls.cliente.post("/empresas/guardar", data={
             "rut": "76086428-5", "razon_social": "Empresa Web SpA",

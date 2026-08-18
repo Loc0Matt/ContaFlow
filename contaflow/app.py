@@ -11,6 +11,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from contaflow.config import APP_TITULO, APP_VERSION, DIR_STATIC, SESSION_SECRET
 from contaflow.database import SessionLocal, crear_esquema
+from contaflow.models import Usuario
 from contaflow.routers import (
     activofijo, configuracion, contabilidad, empresas, general, informes, maestros, remuneraciones,
     tributario,
@@ -32,6 +33,12 @@ RUTAS_ESCRITURA_SIEMPRE_PERMITIDA = {
     "/login", "/seleccionar-empresa", "/seleccionar-periodo", "/modo-presentacion/alternar",
 }
 
+#: Únicas rutas alcanzables mientras el usuario tiene pendiente el cambio de
+#: contraseña obligatorio (el admin/admin inicial, o una cuenta migrada que
+#: todavía la conserva). Sin esto no habría forma de llegar al formulario
+#: que justamente permite cumplir con el cambio.
+RUTAS_CAMBIO_PASSWORD_PERMITIDAS = {"/configuracion/respaldos", "/configuracion/cambiar-password"}
+
 
 def crear_app() -> FastAPI:
     crear_esquema()
@@ -50,6 +57,21 @@ def crear_app() -> FastAPI:
             return await call_next(request)
         if not request.session.get("usuario_id"):
             return RedirectResponse("/login", status_code=303)
+
+        # Contraseña por defecto sin cambiar: se bloquea todo lo demás, para
+        # que nadie quede operando el sistema real con admin/admin. Va antes
+        # que el modo presentación a propósito — si no, una instalación
+        # nueva que además activara el modo presentación quedaría sin forma
+        # de llegar a cambiar la contraseña.
+        if ruta not in RUTAS_CAMBIO_PASSWORD_PERMITIDAS:
+            with SessionLocal() as db:
+                usuario = db.get(Usuario, request.session["usuario_id"])
+                if usuario is not None and usuario.debe_cambiar_password:
+                    return redirigir(
+                        "/configuracion/respaldos", request,
+                        "Por seguridad, cambia tu contraseña antes de seguir usando el sistema.",
+                        "warn",
+                    )
 
         # Modo presentación: bloquea cualquier escritura, sin excepción salvo
         # la lista de arriba. Se revisa acá (y no con un Depends por endpoint)
