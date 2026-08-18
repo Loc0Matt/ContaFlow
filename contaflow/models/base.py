@@ -114,12 +114,6 @@ class RegimenTributario(str, enum.Enum):
         }[self.value]
 
 
-class RolUsuario(str, enum.Enum):
-    ADMIN = "ADMIN"
-    CONTADOR = "CONTADOR"
-    CONSULTA = "CONSULTA"
-
-
 class EstadoPeriodo(str, enum.Enum):
     ABIERTO = "ABIERTO"
     CERRADO = "CERRADO"

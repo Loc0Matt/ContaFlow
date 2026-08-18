@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from contaflow.config import AFP_DEFECTO
 from contaflow.firma import HUELLA, marca_agua
 from contaflow.models import AFP, CentroCosto, Cuenta, Empresa, Parametro, TipoDTE, Usuario
-from contaflow.models.base import RolUsuario
 from contaflow.services.plan_cuentas import CUENTAS_DEFECTO, PLAN_CUENTAS, TIPOS_DTE
 from contaflow.services.seguridad import hash_password
 
@@ -40,7 +39,6 @@ def sembrar_globales(db: Session) -> None:
             username="admin",
             nombre="Administrador",
             password_hash=hash_password("admin"),
-            rol=RolUsuario.ADMIN,
         ))
     db.commit()
 

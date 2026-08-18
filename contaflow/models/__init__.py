@@ -1,7 +1,7 @@
 """Modelos ORM de ContaFlow."""
 from contaflow.models.base import (  # noqa: F401
     Base, ClaseDocumento, EstadoComprobante, EstadoPeriodo, OrigenComprobante, RegimenTributario,
-    RolUsuario, TipoComprobante, TipoCompra, TipoContrato, TipoCuenta, TipoSalud,
+    TipoComprobante, TipoCompra, TipoContrato, TipoCuenta, TipoSalud,
 )
 from contaflow.models.contabilidad import Comprobante, Cuenta, Movimiento  # noqa: F401
 from contaflow.models.operaciones import (  # noqa: F401
@@ -19,5 +19,5 @@ __all__ = [
     "Cuenta", "Comprobante", "Movimiento", "TipoDTE", "Documento", "DocumentoDetalle",
     "Honorario", "Declaracion", "ActivoFijo", "Depreciacion", "AFP", "Trabajador", "Liquidacion",
     "TipoCuenta", "TipoComprobante", "EstadoComprobante", "OrigenComprobante", "ClaseDocumento",
-    "TipoCompra", "RegimenTributario", "RolUsuario", "EstadoPeriodo", "TipoContrato", "TipoSalud",
+    "TipoCompra", "RegimenTributario", "EstadoPeriodo", "TipoContrato", "TipoSalud",
 ]

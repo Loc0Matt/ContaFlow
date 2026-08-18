@@ -8,7 +8,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from contaflow.models.base import Base, EstadoPeriodo, RegimenTributario, RolUsuario, TimestampMixin
+from contaflow.models.base import Base, EstadoPeriodo, RegimenTributario, TimestampMixin
 
 
 class Empresa(Base, TimestampMixin):
@@ -52,12 +52,7 @@ class Usuario(Base, TimestampMixin):
     nombre: Mapped[str] = mapped_column(String(150))
     email: Mapped[str | None] = mapped_column(String(150))
     password_hash: Mapped[str] = mapped_column(String(255))
-    rol: Mapped[RolUsuario] = mapped_column(Enum(RolUsuario), default=RolUsuario.CONTADOR)
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
-
-    @property
-    def puede_editar(self) -> bool:
-        return self.rol in (RolUsuario.ADMIN, RolUsuario.CONTADOR)
 
 
 class Parametro(Base):

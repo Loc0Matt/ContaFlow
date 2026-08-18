@@ -99,6 +99,25 @@ class TestHelpers(unittest.TestCase):
         with engine.connect() as conn:
             self.assertTrue(m.columna_existe(conn, "parametro", "columna_nueva"))
 
+    def test_quitar_columna_si_existe_la_quita(self):
+        engine = _motor_con_esquema()
+        with engine.begin() as conn:
+            m.agregar_columna_si_falta(conn, "parametro", "vieja", "TEXT")
+        with engine.connect() as conn:
+            self.assertTrue(m.columna_existe(conn, "parametro", "vieja"))
+        with engine.begin() as conn:
+            m.quitar_columna_si_existe(conn, "parametro", "vieja")
+        with engine.connect() as conn:
+            self.assertFalse(m.columna_existe(conn, "parametro", "vieja"))
+
+    def test_quitar_columna_si_existe_es_idempotente(self):
+        """Sobre una base nueva, que nunca tuvo la columna, no debe reventar."""
+        engine = _motor_con_esquema()
+        with engine.begin() as conn:
+            m.quitar_columna_si_existe(conn, "usuario", "rol")
+        with engine.begin() as conn:
+            m.quitar_columna_si_existe(conn, "usuario", "rol")  # segunda vez, sigue sin existir
+
 
 class TestVersionGuardada(unittest.TestCase):
     def test_sin_tabla_parametro_devuelve_cero(self):
@@ -130,11 +149,35 @@ class TestVersionGuardada(unittest.TestCase):
 
 class TestMigrarEsquema(unittest.TestCase):
     def test_sin_pendientes_no_hace_nada_ni_respalda(self):
+        """Con el registro real vacío, una base al día no debe tocarse.
+
+        Se aísla MIGRACIONES para que esto siga siendo cierto sin importar
+        cuántas migraciones reales existan en un momento dado — el propio
+        registro real ya se prueba aparte, aplicado, en los tests de abajo.
+        """
         engine = _motor_con_esquema()
         llamadas = []
-        aplicadas = m.migrar_esquema(engine, respaldar=lambda: llamadas.append("respaldo"))
+        original = m.MIGRACIONES
+        m.MIGRACIONES = ()
+        try:
+            aplicadas = m.migrar_esquema(engine, respaldar=lambda: llamadas.append("respaldo"))
+        finally:
+            m.MIGRACIONES = original
         self.assertEqual(aplicadas, [])
         self.assertEqual(llamadas, [])
+
+    def test_el_registro_real_aplicado_a_una_base_nueva_es_inofensivo(self):
+        """El registro real, aplicado a una base recién creada (mismo esquema
+        de hoy), va a tener migraciones "pendientes" por versión — una base
+        nueva parte en la versión 0 — pero cada una debe ser un no-op, porque
+        create_all() ya construyó el esquema actual. Se respalda igual (no
+        hay forma barata de saber de antemano que no hacía falta), pero no
+        debe reventar ni dejar la base en un estado raro."""
+        engine = _motor_con_esquema()
+        aplicadas = m.migrar_esquema(engine, respaldar=lambda: None)
+        self.assertEqual(aplicadas, [x.version for x in m.MIGRACIONES])
+        # Segunda pasada: ya no hay nada pendiente.
+        self.assertEqual(m.migrar_esquema(engine, respaldar=lambda: None), [])
 
     def test_aplica_pendientes_en_orden_y_respalda_una_vez(self):
         engine = _motor_con_esquema()
@@ -224,6 +267,43 @@ class TestIntegracionConCrearEsquema(unittest.TestCase):
                 self.assertEqual(m.version_guardada(conn), m.VERSION_ACTUAL)
         finally:
             bd.engine = engine_original
+
+
+class TestMigracionDeUsuarioRol(unittest.TestCase):
+    """Caso real: la Release v1.0.0, ya publicada, creó `usuario.rol` NOT NULL.
+    Una instalación que actualice el .exe sin tocar sus datos debe seguir
+    funcionando — sin esto, cualquier alta de usuario nuevo fallaría contra
+    esa columna obsoleta."""
+
+    def _base_como_v1_0_0(self):
+        """Arma el esquema actual y le vuelve a agregar `rol` a mano, como
+        si fuera una base creada con la versión publicada."""
+        engine = _motor_con_esquema()
+        with engine.begin() as conn:
+            m.agregar_columna_si_falta(conn, "usuario", "rol", "VARCHAR(20) NOT NULL DEFAULT 'ADMIN'")
+        return engine
+
+    def test_migrar_quita_rol_y_el_usuario_sigue_operable(self):
+        engine = self._base_como_v1_0_0()
+        with engine.connect() as conn:
+            self.assertTrue(m.columna_existe(conn, "usuario", "rol"))
+
+        aplicadas = m.migrar_esquema(engine, respaldar=lambda: None)
+        self.assertIn(1, aplicadas)
+
+        with engine.connect() as conn:
+            self.assertFalse(m.columna_existe(conn, "usuario", "rol"))
+
+        # Insertar un usuario nuevo (como haría guardar_usuario) no debe
+        # chocar con una columna NOT NULL que el ORM ya no conoce.
+        with engine.begin() as conn:
+            conn.execute(text(
+                "INSERT INTO usuario (username, nombre, password_hash, activo) "
+                "VALUES ('juan', 'Juan', 'hash', 1)"
+            ))
+        with engine.connect() as conn:
+            fila = conn.execute(text("SELECT username FROM usuario WHERE username='juan'")).first()
+        self.assertEqual(fila[0], "juan")
 
 
 if __name__ == "__main__":

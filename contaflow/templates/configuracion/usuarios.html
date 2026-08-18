@@ -2,7 +2,8 @@
 {% block titulo %}Usuarios{% endblock %}
 {% block contenido %}
 <h1>Usuarios del sistema</h1>
-<p class="subtitulo">Los usuarios son globales: acceden a todas las empresas registradas.</p>
+<p class="subtitulo">Los usuarios son globales: acceden a todas las empresas registradas,
+   con el mismo nivel de acceso. Sirve para saber quién hizo cada cambio, no para restringir.</p>
 
 <details class="plegable">
   <summary>Agregar o modificar usuario</summary>
@@ -14,8 +15,6 @@
       <div class="campo"><label>Email</label><input name="email" id="f_email"></div>
       <div class="campo"><label>Contraseña</label><input type="password" name="password">
         <div class="ayuda">Déjala vacía al editar para mantener la actual.</div></div>
-      <div class="campo"><label>Rol</label>
-        <select name="rol" id="f_rol">{% for r in roles %}<option value="{{ r.value }}">{{ r.value | capitalize }}</option>{% endfor %}</select></div>
     </div>
     <div class="checkbox"><input type="checkbox" name="activo" id="f_activo" checked><label for="f_activo" style="margin:0">Activo</label></div>
     <div class="acciones"><button class="btn">Guardar usuario</button></div>
@@ -24,15 +23,14 @@
 
 <div class="panel">
   <table>
-    <thead><tr><th>Usuario</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
+    <thead><tr><th>Usuario</th><th>Nombre</th><th>Email</th><th>Estado</th><th></th></tr></thead>
     <tbody>
       {% for u in lista %}
         <tr>
           <td class="mono">{{ u.username }}</td><td>{{ u.nombre }}</td><td>{{ u.email or '—' }}</td>
-          <td>{{ u.rol.value | capitalize }}</td>
           <td><span class="etiqueta-estado {{ 'e-ok' if u.activo else 'e-error' }}">{{ 'Activo' if u.activo else 'Inactivo' }}</span></td>
           <td class="num">
-            <button class="btn sec mini" onclick='cargar({{ u.id }}, {{ u.username | tojson }}, {{ u.nombre | tojson }}, {{ (u.email or "") | tojson }}, {{ u.rol.value | tojson }}, {{ u.activo | tojson }})'>Editar</button>
+            <button class="btn sec mini" onclick='cargar({{ u.id }}, {{ u.username | tojson }}, {{ u.nombre | tojson }}, {{ (u.email or "") | tojson }}, {{ u.activo | tojson }})'>Editar</button>
           </td>
         </tr>
       {% endfor %}
@@ -43,12 +41,11 @@
 
 {% block scripts %}
 <script>
-function cargar(id, username, nombre, email, rol, activo) {
+function cargar(id, username, nombre, email, activo) {
   document.getElementById('usuario_id').value = id;
   document.getElementById('f_username').value = username;
   document.getElementById('f_nombre').value = nombre;
   document.getElementById('f_email').value = email;
-  document.getElementById('f_rol').value = rol;
   document.getElementById('f_activo').checked = activo;
   document.querySelector('details.plegable').open = true;
 }
