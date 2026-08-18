@@ -9,6 +9,7 @@ import tempfile
 import unittest
 from datetime import date
 from pathlib import Path
+from unittest import mock
 
 os.environ.setdefault("CONTAFLOW_DATA", tempfile.mkdtemp(prefix="contaflow-test-"))
 os.environ["CONTAFLOW_DB_URL"] = "sqlite:///" + str(
@@ -210,6 +211,35 @@ class TestComprobantes(BaseTest):
             ],
         )
         self.assertEqual(comp.numero, 4)
+
+    def test_choque_de_numeracion_da_error_de_negocio_no_500(self):
+        """Simula la condición de carrera de P1-1: dos requests casi
+        simultáneas leen el mismo "siguiente número" (acá, forzado con un
+        mock) antes de que la primera termine de guardar. La segunda debe
+        recibir un ErrorContable claro, no un IntegrityError crudo."""
+        import contaflow.services.contabilidad as mod
+
+        with mock.patch.object(mod, "siguiente_numero", return_value=99):
+            crear_comprobante(
+                self.db, self.empresa.id,
+                tipo=TipoComprobante.INGRESO, fecha=date(2025, 7, 1), glosa="Primero",
+                lineas=[
+                    LineaAsiento(cuenta_id=self.cuenta("1.1.01.001").id, debe=1000),
+                    LineaAsiento(cuenta_id=self.cuenta("4.1.01.001").id, haber=1000),
+                ],
+            )
+            with self.assertRaises(ErrorContable) as ctx:
+                crear_comprobante(
+                    self.db, self.empresa.id,
+                    tipo=TipoComprobante.INGRESO, fecha=date(2025, 7, 2), glosa="Choca con el primero",
+                    lineas=[
+                        LineaAsiento(cuenta_id=self.cuenta("1.1.01.001").id, debe=2000),
+                        LineaAsiento(cuenta_id=self.cuenta("4.1.01.001").id, haber=2000),
+                    ],
+                )
+        self.assertIn("Otro proceso", str(ctx.exception))
+        # La sesión debe quedar utilizable después del rollback interno.
+        self.assertTrue(self.db.is_active)
 
     def test_mayor_y_saldo(self):
         for monto in (100_000, 250_000):
@@ -698,6 +728,50 @@ class TestAplicacionWeb(unittest.TestCase):
             "modo_monto": "neto", "neto": "1000",
         }, follow_redirects=True)
         self.assertIn("no es válido", respuesta.text)
+
+    def test_folio_duplicado_da_mensaje_claro_no_500(self):
+        """P1-2: cargar el mismo folio dos veces (doble clic, el mismo Excel
+        importado dos veces) debe dar un aviso de negocio, no una página de
+        error 500 con un IntegrityError crudo."""
+        self.cliente.post("/seleccionar-periodo", data={"anio": 2025, "mes": 10},
+                          follow_redirects=False)
+        datos = {
+            "tipo_dte": 33, "folio": "DUP-1", "fecha_emision": "2025-10-05",
+            "periodo_anio": 2025, "periodo_mes": 10, "entidad_rut": "77777777-7",
+            "entidad_nombre": "Cliente Duplicado", "modo_monto": "neto", "neto": "500000",
+            "exento": "0", "iva": "95000", "contabilizar": "on",
+        }
+        primera = self.cliente.post("/tributario/documentos/ventas/guardar", data=datos,
+                                     follow_redirects=False)
+        self.assertEqual(primera.status_code, 303)
+
+        segunda = self.cliente.post("/tributario/documentos/ventas/guardar", data=datos,
+                                     follow_redirects=True)
+        self.assertEqual(segunda.status_code, 200)
+        self.assertIn("Ya existe un documento", segunda.text)
+
+        from sqlalchemy import select
+
+        from contaflow.database import SessionLocal
+        from contaflow.models import Documento, Empresa
+
+        db = SessionLocal()
+        try:
+            empresa = db.scalar(select(Empresa).where(Empresa.rut == "76086428-5"))
+            cantidad = db.scalar(
+                select(Documento).where(
+                    Documento.empresa_id == empresa.id, Documento.folio == "DUP-1"
+                )
+            )
+            self.assertIsNotNone(cantidad)  # el primero sí quedó guardado
+            todos = db.scalars(
+                select(Documento).where(
+                    Documento.empresa_id == empresa.id, Documento.folio == "DUP-1"
+                )
+            ).all()
+            self.assertEqual(len(todos), 1, "no debe haber quedado un segundo documento duplicado")
+        finally:
+            db.close()
 
     def test_exportaciones(self):
         rutas = [

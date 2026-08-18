@@ -1,10 +1,12 @@
 """Motor contable: creación de asientos, libro mayor y saldos."""
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import date
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from contaflow.models import (
@@ -16,6 +18,23 @@ from contaflow.services.utils import pesos, rango_mes
 
 class ErrorContable(Exception):
     """Regla de negocio contable incumplida."""
+
+
+@contextmanager
+def capturar_integridad(db: Session, mensaje: str):
+    """Envuelve un flush/commit que puede chocar con una restricción única.
+
+    Dos requests casi simultáneas (doble clic, dos pestañas abiertas) pueden
+    leer el mismo "siguiente número" o el mismo folio antes de que la primera
+    termine de guardar; la base de datos rechaza la segunda con
+    IntegrityError. Sin esto, ese error técnico subía sin capturar hasta la
+    página de error 500 genérica, en vez de un mensaje de negocio claro.
+    """
+    try:
+        yield
+    except IntegrityError:
+        db.rollback()
+        raise ErrorContable(mensaje) from None
 
 
 @dataclass
@@ -199,10 +218,15 @@ def crear_comprobante(
             fecha_vencimiento=ln.fecha_vencimiento,
         ))
     db.add(comprobante)
-    if commit:
-        db.commit()
-    else:
-        db.flush()
+    mensaje_choque = (
+        f"Otro proceso ya generó el comprobante N°{comprobante.numero} de tipo "
+        f"{tipo.value} para {fecha.year}. Reintenta — se te asignará el siguiente número."
+    )
+    with capturar_integridad(db, mensaje_choque):
+        if commit:
+            db.commit()
+        else:
+            db.flush()
     return comprobante
 
 
