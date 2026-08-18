@@ -1,6 +1,6 @@
 @echo off
 REM ============================================================
-REM  ContaFlow - Generador del ejecutable para Windows
+REM  ContAll - Generador del ejecutable para Windows
 REM  Autor: Loc0Matt
 REM
 REM  Requisitos: Python 3.11 o superior instalado y en el PATH.
@@ -11,7 +11,7 @@ cd /d "%~dp0\.."
 
 echo.
 echo ============================================================
-echo   ContaFlow - construccion del ejecutable
+echo   ContAll - construccion del ejecutable
 echo ============================================================
 echo.
 
@@ -59,13 +59,13 @@ echo [5/5] Preparando el icono y empaquetando (puede tardar varios minutos)...
 call .venv\Scripts\python.exe herramientas\generar_icono.py
 call .venv\Scripts\pyinstaller.exe build\contaflow.spec --clean --noconfirm || goto :error
 
-if not exist dist\ContaFlow.exe goto :error
+if not exist dist\ContAll.exe goto :error
 
 echo.
 echo ============================================================
 echo  LISTO. El ejecutable quedo en:
 echo.
-echo     dist\ContaFlow.exe
+echo     dist\ContAll.exe
 echo.
 echo  Copialo donde quieras y abrelo con doble clic.
 echo ============================================================

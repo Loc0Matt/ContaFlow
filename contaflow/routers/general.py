@@ -182,7 +182,7 @@ def alternar_modo_presentacion(request: Request, db: Session = Depends(get_db)):
 def bienvenida(request: Request, db: Session = Depends(get_db)):
     """Asistente de perfil: qué tan cargada se ve la interfaz.
 
-    Se responde una sola vez, al abrir ContaFlow por primera vez — el
+    Se responde una sola vez, al abrir ContAll por primera vez — el
     middleware redirige acá mientras no haya perfil elegido. La misma
     pantalla sirve después para cambiarlo desde Configuración → Perfil.
     """

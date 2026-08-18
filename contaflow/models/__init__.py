@@ -1,4 +1,4 @@
-"""Modelos ORM de ContaFlow."""
+"""Modelos ORM de ContAll."""
 from contaflow.models.base import (  # noqa: F401
     Base, ClaseDocumento, EstadoComprobante, EstadoPeriodo, OrigenComprobante, RegimenTributario,
     TipoComprobante, TipoCompra, TipoContrato, TipoCuenta, TipoSalud,

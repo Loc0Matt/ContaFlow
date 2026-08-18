@@ -1,10 +1,15 @@
-# ContaFlow — Sistema Contable Chileno Multiempresa
+# ContAll — Contabilidad para Todos
 
 > Creado por **Loc0Matt** · 2026 · Código abierto bajo licencia [MIT](LICENSE)
 
-Sistema contable completo para llevar una cartera pequeña de clientes, construido según
-la normativa chilena. Funciona **100% offline** en tu computador Windows: no se conecta
-al SII ni a ningún servicio externo, y todos los datos viven en un solo archivo en tu disco.
+Sistema contable chileno multiempresa completo para llevar una cartera pequeña de
+clientes, construido según la normativa chilena. Funciona **100% offline** en tu
+computador Windows: no se conecta al SII ni a ningún servicio externo, y todos los
+datos viven en un solo archivo en tu disco.
+
+> **¿Venías usando ContaFlow?** Es este mismo proyecto con nombre nuevo desde la
+> versión 1.1.0. Actualiza sin miedo: tus datos se detectan solos y no se pierde nada
+> (ver [Dónde quedan tus datos](#dónde-quedan-tus-datos)).
 
 Genera **propuestas de formularios** (F29 mensual y F22 anual) con los códigos calculados
 desde tu propia contabilidad, para que los uses como base al llenar los formularios
@@ -14,7 +19,7 @@ oficiales del SII.
 
 ## Descargar el ejecutable
 
-### ⬇️ [Descargar ContaFlow.exe](https://github.com/Loc0Matt/ContaFlow/releases/latest/download/ContaFlow.exe)
+### ⬇️ [Descargar ContAll.exe](https://github.com/Loc0Matt/ContaFlow/releases/latest/download/ContAll.exe)
 
 Un clic en el link de arriba y empieza la descarga — no hace falta cuenta de GitHub,
 ni saber qué es un repositorio, ni nada técnico. Ese link **siempre entrega la última
@@ -24,7 +29,7 @@ a medio terminar.
 
 Cuando termine de descargar:
 
-1. Colócalo donde quieras (Escritorio, `C:\ContaFlow\`, un pendrive). El `.exe` corre
+1. Colócalo donde quieras (Escritorio, `C:\ContAll\`, un pendrive). El `.exe` corre
    igual desde cualquier lado; si quieres que tus datos viajen con él en el pendrive
    (no solo el programa), mira [Modo portable](#modo-portable-llevar-los-datos-en-el-mismo-pendrive) más abajo.
 2. Ábrelo con doble clic. **No necesitas instalar Python ni nada más.**
@@ -35,7 +40,7 @@ Cuando termine de descargar:
 El manual de usuario (48 páginas, con índice clickeable, explica cada apartado del
 sistema y las 145 cuentas del plan contable una por una) se descarga igual de simple:
 
-**[📖 Descargar el manual en PDF](https://github.com/Loc0Matt/ContaFlow/releases/latest/download/Manual-ContaFlow.pdf)**
+**[📖 Descargar el manual en PDF](https://github.com/Loc0Matt/ContaFlow/releases/latest/download/Manual-ContAll.pdf)**
 
 <details>
 <summary><strong>Ver todas las versiones publicadas</strong></summary>
@@ -54,7 +59,7 @@ Si prefieres compilarlo en tu propio equipo:
 3. Doble clic en **`build\construir_exe.bat`**.
 
 El script crea el entorno, instala dependencias, corre las pruebas y deja el ejecutable
-en `dist\ContaFlow.exe`.
+en `dist\ContAll.exe`.
 
 ### La versión en desarrollo (para quien quiera probar lo último sin esperar una Release)
 
@@ -70,7 +75,7 @@ poder descargarla.
 
 | Documento | Qué contiene |
 |---|---|
-| **[`docs/Manual-ContaFlow.pdf`](docs/Manual-ContaFlow.pdf)** | Manual completo de 48 páginas para un usuario nuevo: índice clickeable, marcadores en el lector, referencias cruzadas y un **diccionario con las 145 cuentas del plan** — qué registra cada una, cuándo se carga y cuándo se abona. |
+| **[`docs/Manual-ContAll.pdf`](docs/Manual-ContAll.pdf)** | Manual completo de 48 páginas para un usuario nuevo: índice clickeable, marcadores en el lector, referencias cruzadas y un **diccionario con las 145 cuentas del plan** — qué registra cada una, cuándo se carga y cuándo se abona. |
 | [`docs/manual.md`](docs/manual.md) | La misma guía en texto plano, para leer en GitHub. |
 
 El PDF se regenera con:
@@ -94,7 +99,7 @@ uno propio se usa el escudo de reserva `logo-generico.svg`.
 
 ## Primer uso
 
-1. Abre `ContaFlow.exe`. Se abre **en su propia ventana de escritorio**, sin
+1. Abre `ContAll.exe`. Se abre **en su propia ventana de escritorio**, sin
    navegador a la vista.
 2. Ingresa con **usuario `admin`, contraseña `admin`**.
 3. Por seguridad, el sistema te pide **cambiar esa contraseña** antes de dejarte
@@ -121,7 +126,7 @@ desactives — ningún formulario guarda mientras esté activo.
 
 ### Cómo funciona por dentro
 
-ContaFlow es una aplicación de escritorio, pero su interfaz está hecha con tecnología
+ContAll es una aplicación de escritorio, pero su interfaz está hecha con tecnología
 web y la dibuja un pequeño servidor que corre **dentro de tu propio computador**. Por eso
 existe la dirección `http://127.0.0.1:8777`: es el programa hablando consigo mismo, no
 internet. Nadie más puede acceder.
@@ -137,12 +142,16 @@ funciona igual.
 Todo se guarda en:
 
 ```
-C:\Users\<tu usuario>\AppData\Local\ContaFlow\contaflow.db
+C:\Users\<tu usuario>\AppData\Local\ContAll\contaflow.db
 ```
 
 Ese único archivo contiene **todas** las empresas. Respáldalo desde
 *Configuración → Respaldos* o cópialo a mano. Si actualizas el `.exe`, los datos se
 conservan porque viven fuera del ejecutable.
+
+Si vienes de **ContaFlow** (nombre del programa hasta la v1.0.0), no necesitas mover
+nada a mano: mientras tus datos sigan en `...\AppData\Local\ContaFlow\`, ContAll los
+encuentra solo la primera vez que abres el `.exe` nuevo.
 
 ### Modo portable (llevar los datos en el mismo pendrive)
 
@@ -151,21 +160,21 @@ no en el pendrive junto al `.exe`. Si conectas el pendrive en otro computador, e
 equipo no tiene tus datos: arranca como si fuera la primera vez.
 
 Para que los datos viajen con el ejecutable, crea a mano una carpeta llamada **`datos`**
-en la misma carpeta donde está `ContaFlow.exe` (por ejemplo, dentro del pendrive, junto
-al `.exe`). Si esa carpeta existe, ContaFlow la usa en vez de AppData — así el `.exe` y
+en la misma carpeta donde está `ContAll.exe` (por ejemplo, dentro del pendrive, junto
+al `.exe`). Si esa carpeta existe, ContAll la usa en vez de AppData — así el `.exe` y
 sus datos quedan juntos, y puedes moverlos entre computadores sin perder nada.
 
-Si ya vienes usando ContaFlow con datos en AppData, no necesitas hacer nada: mientras no
+Si ya vienes usando ContAll con datos en AppData, no necesitas hacer nada: mientras no
 crees esa carpeta `datos`, todo sigue exactamente igual que antes.
 
-### Actualizar ContaFlow
+### Actualizar ContAll
 
 No hay actualización automática por internet (el sistema es offline a propósito).
 Actualizar es descargar el `.exe` nuevo y reemplazar el viejo — nada más. Como los
 datos viven aparte (ver arriba), reemplazar el ejecutable no los toca.
 
 Si una actualización necesita cambiar la estructura de la base de datos (agregar un
-campo nuevo a una tabla existente, por ejemplo), ContaFlow lo detecta y lo aplica solo
+campo nuevo a una tabla existente, por ejemplo), ContAll lo detecta y lo aplica solo
 al abrir, y crea automáticamente un respaldo completo justo antes de tocar nada — no
 hace falta hacer nada manual ni acordarse de nada. Puedes ver la versión de esquema
 aplicada en *Configuración → Respaldos*.
@@ -288,7 +297,7 @@ corresponda.
 ```bash
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt httpx
-.venv/bin/python -m unittest discover -s tests -v   # 180+ pruebas
+.venv/bin/python -m unittest discover -s tests -v   # 185+ pruebas
 .venv/bin/python run.py                             # levanta la app
 ```
 
@@ -320,9 +329,48 @@ contaflow/
 
 ---
 
+## Historial de versiones
+
+Resumen de qué cambia en cada versión publicada. El detalle línea por línea está en
+los commits y en la [página de Releases](https://github.com/Loc0Matt/ContaFlow/releases).
+
+### 1.1.0 — Cambio de nombre a ContAll, sin roles y modo presentación
+
+- **Cambio de nombre**: el proyecto pasa de llamarse ContaFlow a **ContAll —
+  Contabilidad para Todos**. Quien actualice conserva sus datos sin hacer nada (ver
+  [Dónde quedan tus datos](#dónde-quedan-tus-datos)).
+- **Se eliminan los roles**: ya no existen Admin/Contador/Consulta — todos los
+  usuarios tienen el mismo nivel de acceso.
+- **Modo presentación**: un botón en la barra superior bloquea toda escritura del
+  sistema, para mostrárselo a un cliente sin riesgo de modificar algo sin querer.
+- **Asistente de perfil inicial** (Emprendedor / Pyme / Contador): ajusta qué tan
+  cargada se ve la interfaz. Emprendedor y Pyme quedan limitados a una empresa;
+  Contador administra todas las que necesite.
+- **Seguridad de acceso**: cambio de contraseña obligatorio en el primer inicio de
+  sesión, bloqueo temporal tras varios intentos fallidos y un mínimo de contraseña
+  consistente en todo el sistema.
+- **Modo portable**: si se crea a mano una carpeta `datos` junto al `.exe`, los datos
+  viajan con él entre computadores (por ejemplo, en un pendrive).
+- Corrección de condiciones de carrera al numerar comprobantes y folios de
+  documentos, para que un choque dé un mensaje claro en vez de un error interno.
+- La clave de firma de las cookies de sesión ahora es aleatoria y persistida, en vez
+  de derivarse de la ruta de la base de datos.
+- Ya no se puede seleccionar una empresa desactivada, ni cerrar dos veces el mismo
+  ejercicio contable.
+
+### 1.0.0 — Primera versión pública
+
+Primera versión estable de la aplicación de escritorio: contabilidad multiempresa
+completa según la normativa chilena (plan de cuentas, libros, IVA, Formularios 29 y
+22, remuneraciones, activo fijo e informes), empaquetada como un único `.exe` para
+Windows, sin dependencias de red y con control de versión de esquema y respaldo
+automático de la base de datos.
+
+---
+
 ## Autoría y licencia
 
-**ContaFlow** fue creado y desarrollado por **Loc0Matt** en 2026.
+**ContAll** fue creado y desarrollado por **Loc0Matt** en 2026.
 
 Se publica bajo licencia **MIT**: puedes usarlo, modificarlo, redistribuirlo y
 también comercializarlo. La única condición es conservar el aviso de copyright

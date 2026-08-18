@@ -1,6 +1,6 @@
 """Perfiles de instalación: qué tan cargada se ve la interfaz.
 
-Se elige una sola vez, al abrir ContaFlow por primera vez — antes incluso de
+Se elige una sola vez, al abrir ContAll por primera vez — antes incluso de
 crear la primera empresa — y aplica a toda la instalación, no a una empresa
 en particular:
 
@@ -9,7 +9,7 @@ en particular:
   el menú se simplifica según `SECCIONES` más abajo.
 - **Contador**: alguien que administra varias empresas de clientes
   distintos. Sin tope de empresas, sin ninguna sección oculta — el
-  comportamiento completo de ContaFlow, tal como era antes de este archivo.
+  comportamiento completo de ContAll, tal como era antes de este archivo.
 
 Qué se oculta por perfil está definido acá, en el propio código — no se
 configura desde la interfaz. Editable a mano: cambias True/False, recompilas,

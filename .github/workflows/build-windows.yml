@@ -1,4 +1,4 @@
-name: Construir ContaFlow.exe (Windows)
+name: Construir ContAll.exe (Windows)
 
 # PyInstaller no permite compilación cruzada: el .exe debe generarse en Windows.
 # Este workflow lo construye en un runner windows-latest y lo publica como
@@ -62,10 +62,10 @@ jobs:
         shell: pwsh
         timeout-minutes: 5
         run: |
-          if (-not (Test-Path dist/ContaFlow.exe)) {
-            throw "No se genero dist/ContaFlow.exe"
+          if (-not (Test-Path dist/ContAll.exe)) {
+            throw "No se genero dist/ContAll.exe"
           }
-          $tamano = (Get-Item dist/ContaFlow.exe).Length / 1MB
+          $tamano = (Get-Item dist/ContAll.exe).Length / 1MB
           Write-Host ("Tamano del ejecutable: {0:N1} MB" -f $tamano)
 
           # Se lanza SIN redirigir la salida, igual que un doble clic: el .exe
@@ -77,7 +77,7 @@ jobs:
           # Sin ventanas: el runner no debe quedarse con una abierta bloqueando
           # el paso. Los modos de ventana se cubren en tests/test_arranque.py.
           $env:CONTAFLOW_SIN_VENTANA = "1"
-          Start-Process -FilePath dist/ContaFlow.exe | Out-Null
+          Start-Process -FilePath dist/ContAll.exe | Out-Null
 
           $ok = $false
           foreach ($i in 1..30) {
@@ -90,7 +90,7 @@ jobs:
 
           # El bootloader onefile lanza un proceso hijo: hay que detener ambos
           # por nombre, o el step queda colgado esperando al que sobrevive.
-          Get-Process -Name ContaFlow -ErrorAction SilentlyContinue | Stop-Process -Force
+          Get-Process -Name ContAll -ErrorAction SilentlyContinue | Stop-Process -Force
           Start-Sleep -Seconds 2
 
           if (-not $ok) {
@@ -105,15 +105,15 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path paquete | Out-Null
-          Copy-Item dist/ContaFlow.exe paquete/
+          Copy-Item dist/ContAll.exe paquete/
           Copy-Item README.md paquete/LEEME.md
-          Copy-Item docs/Manual-ContaFlow.pdf paquete/
+          Copy-Item docs/Manual-ContAll.pdf paquete/
           Copy-Item docs/manual.md paquete/ -ErrorAction SilentlyContinue
 
       - name: Publicar artefacto descargable
         uses: actions/upload-artifact@v4
         with:
-          name: ContaFlow-Windows
+          name: ContAll-Windows
           path: paquete/
           retention-days: 90
 
@@ -122,15 +122,18 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/ContaFlow.exe
-            docs/Manual-ContaFlow.pdf
+            dist/ContAll.exe
+            docs/Manual-ContAll.pdf
           body: |
-            ## ContaFlow ${{ github.ref_name }}
+            ## ContAll ${{ github.ref_name }}
 
-            Sistema contable chileno multiempresa para uso personal.
+            Sistema contable chileno multiempresa para uso personal — contabilidad para todos.
 
-            **Instalación:** descarga `ContaFlow.exe`, colócalo donde quieras y ábrelo
+            **Instalación:** descarga `ContAll.exe`, colócalo donde quieras y ábrelo
             con doble clic. No requiere instalar Python ni nada más.
 
             Windows SmartScreen puede advertir por tratarse de un ejecutable sin firma
             digital: elige «Más información» → «Ejecutar de todas formas».
+
+            Si ya usabas **ContaFlow** (nombre anterior de este mismo proyecto), tus
+            datos se conservan automáticamente: no hace falta hacer nada.

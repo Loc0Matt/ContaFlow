@@ -27,7 +27,7 @@ class TestSello(unittest.TestCase):
     def test_contiene_los_datos_de_autoria(self):
         d = sello()
         self.assertEqual(d["autor"], AUTOR)
-        self.assertEqual(d["proyecto"], "ContaFlow")
+        self.assertEqual(d["proyecto"], "ContAll")
         self.assertEqual(d["licencia"], "MIT")
         self.assertIn("Loc0Matt", d["repositorio"])
 

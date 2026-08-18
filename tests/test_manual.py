@@ -121,7 +121,7 @@ class TestGeneracionPDF(unittest.TestCase):
         self.assertGreater(len(marcadores), 90, "Faltan marcadores en el panel del lector.")
 
         titulos = [str(m.title) for m in marcadores]
-        self.assertIn("1. Bienvenido a ContaFlow", titulos)
+        self.assertIn("1. Bienvenido a ContAll", titulos)
         self.assertIn("4.3 Diccionario de cuentas", titulos)
         # Los títulos deben ser legibles, no la clave interna del ancla.
         internos = [t for t in titulos if re.fullmatch(r"(cap|grupo|anexo)[\w.-]*", t)]

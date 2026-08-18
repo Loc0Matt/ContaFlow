@@ -1,6 +1,6 @@
-"""Genera el manual de usuario de ContaFlow en PDF.
+"""Genera el manual de usuario de ContAll en PDF.
 
-Produce `docs/Manual-ContaFlow.pdf` con índice clickeable, marcadores en el
+Produce `docs/Manual-ContAll.pdf` con índice clickeable, marcadores en el
 panel lateral del lector, referencias cruzadas internas y enlaces externos.
 
     python herramientas/generar_manual.py [ruta-de-salida.pdf]
@@ -280,7 +280,7 @@ def portada():
         Paragraph(
             "Este manual explica, paso a paso, cómo funciona cada apartado del sistema y "
             "para qué sirve cada una de las cuentas del plan contable. Está escrito para "
-            "alguien que abre ContaFlow por primera vez.",
+            "alguien que abre ContAll por primera vez.",
             ParagraphStyle("intro", parent=EST["cuerpo"], alignment=TA_CENTER,
                            leftIndent=22 * mm, rightIndent=22 * mm, fontSize=10)),
         Spacer(1, 22 * mm),
@@ -311,9 +311,9 @@ def indice():
 
 def cap_bienvenida():
     return [
-        titulo("1. Bienvenido a ContaFlow", 1, "cap1"),
+        titulo("1. Bienvenido a ContAll", 1, "cap1"),
         parrafo(
-            "ContaFlow es un sistema de contabilidad completo que corre <b>en tu propio "
+            "ContAll es un sistema de contabilidad completo que corre <b>en tu propio "
             "computador</b>. No necesita internet, no envía tus datos a ningún servidor y "
             "está pensado para llevar la contabilidad de varias empresas pequeñas a la vez."
         ),
@@ -348,12 +348,12 @@ def cap_bienvenida():
 
         titulo("1.2 Instalar y abrir", 2, "cap1-2"),
         parrafo(
-            "ContaFlow es un solo archivo: <b>ContaFlow.exe</b>. No tiene instalador ni "
+            "ContAll es un solo archivo: <b>ContAll.exe</b>. No tiene instalador ni "
             "deja rastros en el registro de Windows."
         ),
         numerada([
-            "Copia <b>ContaFlow.exe</b> donde quieras: el Escritorio, una carpeta como "
-            "<font face='Courier'>C:\\ContaFlow\\</font>, incluso un pendrive.",
+            "Copia <b>ContAll.exe</b> donde quieras: el Escritorio, una carpeta como "
+            "<font face='Courier'>C:\\ContAll\\</font>, incluso un pendrive.",
             "Haz doble clic sobre él.",
             "La primera vez Windows puede mostrar una advertencia de SmartScreen porque el "
             "programa no tiene firma digital comercial. Elige <b>Más información</b> y luego "
@@ -364,10 +364,10 @@ def cap_bienvenida():
         titulo("1.3 La ventana de control", 2, "cap1-3"),
         parrafo(
             "La ventanita azul <b>es el sistema corriendo</b>. Mientras esté abierta, "
-            "ContaFlow funciona; si la cierras, se apaga. Puedes minimizarla sin problema."
+            "ContAll funciona; si la cierras, se apaga. Puedes minimizarla sin problema."
         ),
         vinetas([
-            "<b>Abrir ContaFlow</b> — vuelve a abrir la pantalla en tu navegador, por si la "
+            "<b>Abrir ContAll</b> — vuelve a abrir la pantalla en tu navegador, por si la "
             "cerraste por accidente.",
             "<b>Salir</b> — apaga el sistema. Úsalo cuando termines de trabajar.",
         ]),
@@ -388,11 +388,11 @@ def cap_bienvenida():
         parrafo("Todo lo que registres vive en un único archivo:"),
         parrafo(
             "<font face='Courier' size='8.5'>C:\\Users\\&lt;tu usuario&gt;\\AppData\\Local\\"
-            "ContaFlow\\contaflow.db</font>"
+            "ContAll\\contaflow.db</font>"
         ),
         parrafo(
             "Ese archivo contiene <b>todas</b> las empresas. Está fuera del ejecutable a "
-            "propósito: si mañana reemplazas ContaFlow.exe por una versión nueva, tus datos "
+            "propósito: si mañana reemplazas ContAll.exe por una versión nueva, tus datos "
             "siguen intactos. Respáldalo seguido — ver "
             f"{enlace('§17.4 Respaldos', 'cap17-4')}."
         ),
@@ -456,7 +456,7 @@ def cap_conceptos():
         parrafo(
             "El cliente te debe el total con IVA (por eso está al debe), tu ingreso real es "
             "el neto y el IVA no es tuyo: lo recaudas para el Fisco, así que es una deuda. "
-            "<b>ContaFlow arma este asiento solo</b> cada vez que registras una venta."
+            "<b>ContAll arma este asiento solo</b> cada vez que registras una venta."
         ),
 
         titulo("2.2 Los cinco tipos de cuenta", 2, "cap2-2"),
@@ -668,7 +668,7 @@ def cap_plan_cuentas():
         titulo("4. El plan de cuentas", 1, "cap4"),
         parrafo(
             "El plan de cuentas es la columna vertebral de la contabilidad: la lista de "
-            "«cajones» donde se guarda cada peso. ContaFlow trae uno completo, basado en la "
+            "«cajones» donde se guarda cada peso. ContAll trae uno completo, basado en la "
             "estructura chilena habitual para PyMEs, y lo crea automáticamente al dar de "
             "alta cada empresa."
         ),
@@ -1601,7 +1601,7 @@ def cap_configuracion():
             "<b>Restaurar</b> reemplaza todos los datos actuales por los del respaldo. Antes "
             "de hacerlo, el sistema guarda automáticamente una copia del estado actual, así "
             "que siempre puedes volver atrás. Después de restaurar, cierra y vuelve a abrir "
-            "ContaFlow."
+            "ContAll."
         ),
         aviso(
             "Los respaldos quedan en el mismo computador. Si se echa a perder el disco, se "
@@ -1652,7 +1652,7 @@ def cap_problemas():
                  "SmartScreen avisa porque el ejecutable no tiene firma digital comercial. "
                  "Elige «Más información» → «Ejecutar de todas formas»."],
                 ["Cerré la ventanita azul y el sistema dejó de responder.",
-                 "Esa ventana <b>es</b> el sistema. Vuelve a abrir ContaFlow.exe."],
+                 "Esa ventana <b>es</b> el sistema. Vuelve a abrir ContAll.exe."],
             ],
             [52 * mm, 119 * mm],
         ),
@@ -1724,7 +1724,7 @@ def cap_anexos():
             ["", ""],
             [[
                 "<b>Recuerda</b>",
-                "ContaFlow es una herramienta de apoyo. Las propuestas de formularios se "
+                "ContAll es una herramienta de apoyo. Las propuestas de formularios se "
                 "calculan desde tu contabilidad, pero el SII actualiza sus formularios y los "
                 "organismos previsionales sus tasas periódicamente. Contrasta siempre antes "
                 "de declarar, y respalda tus datos con regularidad.",
@@ -1752,7 +1752,7 @@ def construir(salida: Path) -> Path:
         leftMargin=18 * mm, rightMargin=18 * mm, topMargin=18 * mm, bottomMargin=22 * mm,
         title=f"Manual de usuario · {APP_NAME} {APP_VERSION}",
         author=sello()["autor"],
-        subject="Manual de usuario del sistema contable chileno ContaFlow",
+        subject="Manual de usuario del sistema contable chileno ContAll",
         creator=linea_credito(), keywords=marca_agua(),
     )
     marco = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id="normal")
@@ -1791,7 +1791,7 @@ def construir(salida: Path) -> Path:
 
 
 def main() -> int:
-    destino = Path(sys.argv[1]) if len(sys.argv) > 1 else RAIZ / "docs" / "Manual-ContaFlow.pdf"
+    destino = Path(sys.argv[1]) if len(sys.argv) > 1 else RAIZ / "docs" / "Manual-ContAll.pdf"
     ruta_final = construir(destino)
     tamano = ruta_final.stat().st_size / 1024
     print(f"Manual generado: {ruta_final}  ({tamano:,.0f} KB)")

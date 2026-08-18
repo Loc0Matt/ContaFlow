@@ -1,8 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""Especificación de PyInstaller para generar ContaFlow.exe (Windows).
+"""Especificación de PyInstaller para generar ContAll.exe (Windows).
 
 Se construye con:  pyinstaller build/contaflow.spec --clean --noconfirm
-El resultado queda en dist/ContaFlow.exe (un único archivo).
+El resultado queda en dist/ContAll.exe (un único archivo).
 """
 from pathlib import Path
 
@@ -64,7 +64,7 @@ exe = EXE(
     analisis.binaries,
     analisis.datas,
     [],
-    name="ContaFlow",
+    name="ContAll",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

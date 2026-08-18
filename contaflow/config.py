@@ -1,4 +1,4 @@
-"""Configuración global de ContaFlow.
+"""Configuración global de ContAll.
 
 Mantiene rutas de datos, parámetros tributarios y previsionales chilenos.
 Los valores por defecto son editables desde la interfaz (tabla `parametro`),
@@ -10,9 +10,14 @@ import os
 import sys
 from pathlib import Path
 
-APP_NAME = "ContaFlow"
-APP_TITULO = "ContaFlow · Sistema Contable Chileno"
-APP_VERSION = "1.0.0"
+APP_NAME = "ContAll"
+APP_TITULO = "ContAll · Contabilidad para Todos"
+APP_VERSION = "1.1.0"
+
+#: Nombre anterior del programa (hasta la v1.0.0). Se usa sólo para que
+#: quien ya lo tenía instalado no "pierda" sus datos al actualizar — ver
+#: `dir_datos_legado()`.
+_NOMBRE_ANTERIOR = "ContaFlow"
 
 
 def es_ejecutable_congelado() -> bool:
@@ -30,10 +35,10 @@ def dir_recursos() -> Path:
 def dir_datos_portable() -> Path | None:
     """Carpeta `datos` junto al propio `.exe`, si existe.
 
-    Por defecto ContaFlow guarda todo en AppData/XDG — atado al computador,
+    Por defecto ContAll guarda todo en AppData/XDG — atado al computador,
     no al ejecutable. Para que un `.exe` en un pendrive lleve sus datos
     consigo entre computadores, basta con crear a mano una carpeta llamada
-    `datos` en la misma carpeta donde está `ContaFlow.exe`: si existe, se
+    `datos` en la misma carpeta donde está `ContAll.exe`: si existe, se
     usa esa en vez de AppData.
 
     Es opt-in a propósito (la carpeta tiene que existir de antemano): así
@@ -49,16 +54,37 @@ def dir_datos_portable() -> Path | None:
     return carpeta if carpeta.is_dir() else None
 
 
+def _carpeta_appdata(nombre: str) -> Path:
+    if os.name == "nt":
+        return Path(os.environ.get("LOCALAPPDATA", Path.home())) / nombre
+    return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / nombre
+
+
+def dir_datos_legado() -> Path | None:
+    """Carpeta AppData/XDG de la v1.0.0, cuando el programa se llamaba
+    ContaFlow — sólo si de verdad tiene datos adentro.
+
+    Con el cambio de nombre a ContAll (v1.1.0), la carpeta por defecto pasa
+    de `.../ContaFlow` a `.../ContAll`. Sin este empalme, quien actualice el
+    `.exe` abriría un sistema aparentemente vacío la primera vez, con sus
+    empresas y comprobantes "perdidos" en la carpeta vieja. Se comprueba que
+    exista `contaflow.db` (no sólo la carpeta) para no adoptar por error una
+    carpeta `ContaFlow` vacía o de otra cosa.
+    """
+    carpeta = _carpeta_appdata(_NOMBRE_ANTERIOR)
+    return carpeta if (carpeta / "contaflow.db").is_file() else None
+
+
 def dir_datos() -> Path:
     """Carpeta de datos del usuario. Persiste entre actualizaciones del .exe."""
     if os.environ.get("CONTAFLOW_DATA"):
         base = Path(os.environ["CONTAFLOW_DATA"])
     elif dir_datos_portable() is not None:
         base = dir_datos_portable()
-    elif os.name == "nt":
-        base = Path(os.environ.get("LOCALAPPDATA", Path.home())) / APP_NAME
+    elif not es_ejecutable_congelado():
+        base = _carpeta_appdata(APP_NAME)
     else:
-        base = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / APP_NAME
+        base = dir_datos_legado() or _carpeta_appdata(APP_NAME)
     base.mkdir(parents=True, exist_ok=True)
     return base
 

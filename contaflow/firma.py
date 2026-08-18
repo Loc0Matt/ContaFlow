@@ -1,4 +1,4 @@
-"""Sello de autoría de ContaFlow.
+"""Sello de autoría de ContAll.
 
 El proyecto es de código abierto (licencia MIT): cualquiera puede usarlo,
 modificarlo o comercializarlo, siempre que conserve el aviso de copyright.
@@ -20,13 +20,13 @@ import json
 #: Datos de autoría en base64 (JSON con claves ordenadas).
 _SELLO = (
     "eyJhbmlvIjoyMDI2LCJhdXRvciI6IkxvYzBNYXR0IiwiY29udGFjdG8iOiJtYXRpLnNvdG85OEBnbWFpbC5"
-    "jb20iLCJkZXNjcmlwY2lvbiI6IlNpc3RlbWEgY29udGFibGUgY2hpbGVubyBtdWx0aWVtcHJlc2EiLCJsaW"
-    "NlbmNpYSI6Ik1JVCIsInByb3llY3RvIjoiQ29udGFGbG93IiwicmVwb3NpdG9yaW8iOiJnaXRodWIuY29tL"
-    "0xvYzBNYXR0L3BydWViYS1jb2RlIn0="
+    "jb20iLCJkZXNjcmlwY2lvbiI6IlNpc3RlbWEgY29udGFibGUgY2hpbGVubyBtdWx0aWVtcHJlc2EgXHUyMD"
+    "E0IGNvbnRhYmlsaWRhZCBwYXJhIHRvZG9zIiwibGljZW5jaWEiOiJNSVQiLCJwcm95ZWN0byI6IkNvbnRBb"
+    "GwiLCJyZXBvc2l0b3JpbyI6ImdpdGh1Yi5jb20vTG9jME1hdHQvQ29udGFGbG93In0="
 )
 
 #: SHA-256 del JSON original. Si el sello se altera, deja de coincidir.
-HUELLA = "8948a5b704e5b85ceb87f7a3e3e25417d443992e1a62fe9cc6b7e77b543e69b5"
+HUELLA = "1f19723588daef7a4c852f3719b7c87998f40b5bea775bfa04f2498e2bb72373"
 
 
 def sello() -> dict:
@@ -68,7 +68,7 @@ def _informe() -> str:
     filas = "\n".join(f"  {k.ljust(ancho)} : {v}" for k, v in sorted(d.items()))
     estado = "íntegro" if intacto() else "¡ALTERADO!"
     return (
-        "Sello de autoría de ContaFlow\n"
+        "Sello de autoría de ContAll\n"
         "=============================\n"
         f"{filas}\n"
         f"  {'huella'.ljust(ancho)} : {HUELLA}\n"

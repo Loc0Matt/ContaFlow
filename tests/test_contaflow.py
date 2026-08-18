@@ -1,4 +1,4 @@
-"""Pruebas del núcleo contable, tributario y previsional de ContaFlow.
+"""Pruebas del núcleo contable, tributario y previsional de ContAll.
 
 Se ejecutan contra una base SQLite temporal (variable CONTAFLOW_DB_URL).
 """
@@ -673,7 +673,7 @@ class TestAplicacionWeb(unittest.TestCase):
                          follow_redirects=False)
         # El admin sembrado exige cambiar la contraseña por defecto antes de
         # poder usar el resto del sistema (P1-4) — igual que haría cualquier
-        # persona la primera vez que abre ContaFlow.
+        # persona la primera vez que abre ContAll.
         cls.cliente.post("/configuracion/cambiar-password", data={
             "password_actual": "admin", "password_nueva": "una-clave-de-prueba-larga",
         }, follow_redirects=False)

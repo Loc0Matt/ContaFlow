@@ -1,4 +1,4 @@
-"""Punto de entrada de ContaFlow para escritorio.
+"""Punto de entrada de ContAll para escritorio.
 
 Levanta el servidor local y abre la interfaz. Intenta, en este orden:
 
@@ -9,7 +9,7 @@ Levanta el servidor local y abre la interfaz. Intenta, en este orden:
 La variable de entorno CONTAFLOW_SIN_VENTANA=1 se salta los tres pasos y deja
 sólo el servidor, que es lo que necesitan las pruebas automáticas.
 
-Es el archivo que PyInstaller convierte en ContaFlow.exe.
+Es el archivo que PyInstaller convierte en ContAll.exe.
 """
 from __future__ import annotations
 
@@ -102,7 +102,7 @@ class Servidor:
 
 
 def ventana_nativa(servidor: Servidor) -> bool:
-    """Abre ContaFlow en su propia ventana de escritorio, sin navegador.
+    """Abre ContAll en su propia ventana de escritorio, sin navegador.
 
     Usa pywebview, que en Windows incrusta el motor WebView2 (el mismo de
     Edge, preinstalado en Windows 10 y 11). La ventana no tiene barra de
@@ -187,7 +187,7 @@ def ventana_control(servidor: Servidor) -> bool:
              fg="white", bg="#1f3864").pack(pady=(24, 0))
     tk.Label(raiz, text="Sistema contable chileno multiempresa",
              font=("Segoe UI", 9), fg="#a8b8d8", bg="#1f3864").pack()
-    tk.Label(raiz, text="ContaFlow se abrió en una ventana aparte.",
+    tk.Label(raiz, text="ContAll se abrió en una ventana aparte.",
              font=("Segoe UI", 8), fg="#a8b8d8", bg="#1f3864").pack(pady=(8, 0))
     tk.Label(raiz, text=f"Servidor activo en {servidor.url}",
              font=("Segoe UI", 9), fg="#7fd6c4", bg="#1f3864").pack(pady=(14, 0))
@@ -196,12 +196,12 @@ def ventana_control(servidor: Servidor) -> bool:
 
     marco = tk.Frame(raiz, bg="#1f3864")
     marco.pack(pady=18)
-    tk.Button(marco, text="Abrir ContaFlow", font=("Segoe UI", 10, "bold"),
+    tk.Button(marco, text="Abrir ContAll", font=("Segoe UI", 10, "bold"),
               bg="#0d9488", fg="white", relief="flat", padx=18, pady=7,
               command=lambda: webbrowser.open(servidor.url)).pack(side="left", padx=6)
 
     def salir():
-        if messagebox.askokcancel("Salir", "¿Cerrar ContaFlow? Se detendrá el servidor local."):
+        if messagebox.askokcancel("Salir", "¿Cerrar ContAll? Se detendrá el servidor local."):
             servidor.detener()
             raiz.destroy()
 

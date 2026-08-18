@@ -2,10 +2,10 @@
 
 `Base.metadata.create_all()` (la llama `database.crear_esquema()`) sólo crea
 las tablas que falten: nunca modifica una que ya existe. Si una versión
-futura de ContaFlow agrega una columna a una tabla existente, hace falta un
+futura de ContAll agrega una columna a una tabla existente, hace falta un
 paso explícito que la agregue también en las bases de datos ya instaladas
 — si no, el programa fallaría al leer o escribir ese campo apenas alguien
-reemplazara su ContaFlow.exe viejo por uno nuevo sin tocar sus datos.
+reemplazara su ContAll.exe viejo por uno nuevo sin tocar sus datos.
 
 Este módulo se encarga de eso solo, en cada arranque, sin que haga falta
 acordarse en cada actualización:

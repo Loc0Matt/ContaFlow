@@ -213,5 +213,5 @@ def restaurar(request: Request, nombre: str = Form(...)):
     except FileNotFoundError:
         return redirigir("/configuracion/respaldos", request, "El respaldo no existe.", "error")
     return redirigir("/configuracion/respaldos", request,
-                     "Respaldo restaurado. Cierra y vuelve a abrir ContaFlow para recargar los datos.",
+                     "Respaldo restaurado. Cierra y vuelve a abrir ContAll para recargar los datos.",
                      "warn")

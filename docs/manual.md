@@ -1,4 +1,4 @@
-# Manual de uso — ContaFlow
+# Manual de uso — ContAll
 
 Guía práctica del ciclo contable mensual completo.
 
@@ -240,9 +240,9 @@ y al menos una vez al mes.
 
 Restaurar reemplaza **todos** los datos de **todas** las empresas por los del respaldo,
 pero antes guarda automáticamente una copia del estado actual (`antes-de-restaurar-…`).
-Después de restaurar, cierra y vuelve a abrir ContaFlow.
+Después de restaurar, cierra y vuelve a abrir ContAll.
 
-Los respaldos están en `C:\Users\<tu usuario>\AppData\Local\ContaFlow\respaldos\`.
+Los respaldos están en `C:\Users\<tu usuario>\AppData\Local\ContAll\respaldos\`.
 Cópialos a un disco externo o a la nube: si se pierde el disco, se pierde todo.
 
 ---
@@ -250,7 +250,7 @@ Cópialos a un disco externo o a la nube: si se pierde el disco, se pierde todo.
 ## Preguntas frecuentes
 
 **¿Se conecta al SII?**
-No. ContaFlow es completamente offline. Los documentos se ingresan a mano o desde tus
+No. ContAll es completamente offline. Los documentos se ingresan a mano o desde tus
 propios registros, y los formularios son propuestas para traspasar al sitio del SII.
 
 **¿Puedo llevar varias empresas?**

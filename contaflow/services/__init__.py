@@ -1,1 +1,1 @@
-"""Lógica de negocio de ContaFlow."""
+"""Lógica de negocio de ContAll."""

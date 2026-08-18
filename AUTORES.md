@@ -1,10 +1,11 @@
 # Autoría
 
-**ContaFlow** — Sistema Contable Chileno Multiempresa
+**ContAll** — Sistema Contable Chileno Multiempresa (Contabilidad para Todos)
 
 Creado y desarrollado por **Loc0Matt**, 2026.
 
 - Repositorio original: https://github.com/Loc0Matt/prueba-code
+- Repositorio actual: https://github.com/Loc0Matt/ContaFlow
 - Licencia: [MIT](LICENSE)
 
 ## Si vas a usar, mejorar o comercializar este sistema
