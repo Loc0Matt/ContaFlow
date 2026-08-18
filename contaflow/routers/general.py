@@ -148,9 +148,9 @@ def panel(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/seleccionar-empresa")
 def seleccionar_empresa(request: Request, empresa_id: int = Form(...), db: Session = Depends(get_db)):
-    empresa = db.get(Empresa, empresa_id)
+    empresa = db.scalar(select(Empresa).where(Empresa.id == empresa_id, Empresa.activa.is_(True)))
     if empresa is None:
-        return redirigir("/", request, "Empresa no encontrada.", "error")
+        return redirigir("/", request, "Empresa no encontrada o inactiva.", "error")
     request.session["empresa_id"] = empresa.id
     destino = request.headers.get("referer", "/")
     return redirigir(destino, request, f"Trabajando en {empresa.razon_social}.")

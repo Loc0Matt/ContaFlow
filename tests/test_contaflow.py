@@ -735,6 +735,32 @@ class TestAplicacionWeb(unittest.TestCase):
         }, follow_redirects=True)
         self.assertIn("no es válido", respuesta.text)
 
+    def test_no_se_puede_seleccionar_una_empresa_inactiva(self):
+        """P2-2: seleccionar_empresa no filtraba por Empresa.activa — un
+        POST directo con el id de una empresa dada de baja la dejaba
+        seleccionada igual."""
+        from sqlalchemy import select
+
+        from contaflow.database import SessionLocal
+        from contaflow.models import Empresa
+
+        db = SessionLocal()
+        try:
+            empresa = Empresa(rut="76222333-K", razon_social="Empresa Inactiva SpA",
+                              regimen=RegimenTributario.ART14D3, activa=False)
+            db.add(empresa)
+            db.commit()
+            empresa_id = empresa.id
+        finally:
+            db.close()
+
+        respuesta = self.cliente.post("/seleccionar-empresa", data={"empresa_id": empresa_id},
+                                      follow_redirects=True)
+        self.assertIn("no encontrada o inactiva", respuesta.text)
+
+        # Y el selector de arriba tampoco debe seguir mostrándola como activa.
+        self.assertNotIn("Empresa Inactiva SpA", respuesta.text)
+
     def test_folio_duplicado_da_mensaje_claro_no_500(self):
         """P1-2: cargar el mismo folio dos veces (doble clic, el mismo Excel
         importado dos veces) debe dar un aviso de negocio, no una página de
