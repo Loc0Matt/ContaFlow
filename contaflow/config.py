@@ -116,4 +116,31 @@ AFP_DEFECTO = [
 GRATIFICACION_PORCENTAJE = 0.25
 GRATIFICACION_TOPE_IMM = 4.75
 
-SESSION_SECRET = os.environ.get("CONTAFLOW_SECRET", "contaflow-local-" + str(RUTA_BD))
+def _obtener_o_crear_secreto_sesion() -> str:
+    """Clave de firma de las cookies de sesión: aleatoria y persistida.
+
+    Antes se derivaba de la ruta de la base de datos — predecible, y la
+    misma para cualquier instalación del mismo usuario de Windows. Ahora se
+    genera una sola vez con secrets.token_hex() y se guarda en un archivo
+    dentro de la carpeta de datos, para que sobreviva a que se reemplace el
+    .exe por una versión nueva.
+    """
+    import secrets
+
+    archivo = DIR_DATOS / "session.key"
+    try:
+        clave = archivo.read_text(encoding="utf-8").strip()
+        if clave:
+            return clave
+    except OSError:
+        pass
+
+    clave = secrets.token_hex(32)
+    try:
+        archivo.write_text(clave, encoding="utf-8")
+    except OSError:
+        pass  # sin permiso de escritura: mejor una clave nueva cada arranque que romper
+    return clave
+
+
+SESSION_SECRET = os.environ.get("CONTAFLOW_SECRET") or _obtener_o_crear_secreto_sesion()
