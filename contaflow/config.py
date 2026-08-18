@@ -27,10 +27,34 @@ def dir_recursos() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
+def dir_datos_portable() -> Path | None:
+    """Carpeta `datos` junto al propio `.exe`, si existe.
+
+    Por defecto ContaFlow guarda todo en AppData/XDG — atado al computador,
+    no al ejecutable. Para que un `.exe` en un pendrive lleve sus datos
+    consigo entre computadores, basta con crear a mano una carpeta llamada
+    `datos` en la misma carpeta donde está `ContaFlow.exe`: si existe, se
+    usa esa en vez de AppData.
+
+    Es opt-in a propósito (la carpeta tiene que existir de antemano): así
+    una instalación ya en uso, con datos en AppData, nunca «pierde» sus
+    datos de golpe sólo por actualizar el ejecutable — seguiría sin
+    encontrar esa carpeta y usaría AppData exactamente como antes. Sólo
+    aplica al ejecutable congelado; en desarrollo (`python run.py`) no
+    tendría sentido.
+    """
+    if not es_ejecutable_congelado():
+        return None
+    carpeta = Path(sys.executable).resolve().parent / "datos"
+    return carpeta if carpeta.is_dir() else None
+
+
 def dir_datos() -> Path:
     """Carpeta de datos del usuario. Persiste entre actualizaciones del .exe."""
     if os.environ.get("CONTAFLOW_DATA"):
         base = Path(os.environ["CONTAFLOW_DATA"])
+    elif dir_datos_portable() is not None:
+        base = dir_datos_portable()
     elif os.name == "nt":
         base = Path(os.environ.get("LOCALAPPDATA", Path.home())) / APP_NAME
     else:

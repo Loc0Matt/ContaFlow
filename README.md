@@ -24,7 +24,9 @@ a medio terminar.
 
 Cuando termine de descargar:
 
-1. Colócalo donde quieras (Escritorio, `C:\ContaFlow\`, un pendrive).
+1. Colócalo donde quieras (Escritorio, `C:\ContaFlow\`, un pendrive). El `.exe` corre
+   igual desde cualquier lado; si quieres que tus datos viajen con él en el pendrive
+   (no solo el programa), mira [Modo portable](#modo-portable-llevar-los-datos-en-el-mismo-pendrive) más abajo.
 2. Ábrelo con doble clic. **No necesitas instalar Python ni nada más.**
 3. Windows SmartScreen puede advertir porque el ejecutable no está firmado digitalmente
    (ocurre con cualquier programa sin certificado de firma comercial paga). Elige
@@ -127,6 +129,20 @@ C:\Users\<tu usuario>\AppData\Local\ContaFlow\contaflow.db
 Ese único archivo contiene **todas** las empresas. Respáldalo desde
 *Configuración → Respaldos* o cópialo a mano. Si actualizas el `.exe`, los datos se
 conservan porque viven fuera del ejecutable.
+
+### Modo portable (llevar los datos en el mismo pendrive)
+
+Por defecto, los datos quedan en el AppData del computador donde corres el programa —
+no en el pendrive junto al `.exe`. Si conectas el pendrive en otro computador, ese otro
+equipo no tiene tus datos: arranca como si fuera la primera vez.
+
+Para que los datos viajen con el ejecutable, crea a mano una carpeta llamada **`datos`**
+en la misma carpeta donde está `ContaFlow.exe` (por ejemplo, dentro del pendrive, junto
+al `.exe`). Si esa carpeta existe, ContaFlow la usa en vez de AppData — así el `.exe` y
+sus datos quedan juntos, y puedes moverlos entre computadores sin perder nada.
+
+Si ya vienes usando ContaFlow con datos en AppData, no necesitas hacer nada: mientras no
+crees esa carpeta `datos`, todo sigue exactamente igual que antes.
 
 ### Actualizar ContaFlow
 
