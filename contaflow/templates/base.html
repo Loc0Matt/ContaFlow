@@ -91,6 +91,17 @@
 
       <div class="espacio"></div>
       {% if usuario %}
+        <form method="post" action="/modo-presentacion/alternar" style="margin:0">
+          {% if modo_presentacion_activo %}
+            <button class="btn mini presentacion activo" title="El sistema está en solo lectura. Haz clic para volver a poder editar.">
+              🔒 Modo presentación — solo lectura
+            </button>
+          {% else %}
+            <button class="btn sec mini presentacion" title="Bloquea toda escritura, para mostrarle el sistema a un cliente sin riesgo.">
+              Modo presentación
+            </button>
+          {% endif %}
+        </form>
         <span class="usuario">{{ usuario.nombre }}</span>
         <a class="btn sec mini" href="/logout">Salir</a>
       {% endif %}

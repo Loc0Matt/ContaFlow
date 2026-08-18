@@ -77,6 +77,8 @@ def render(
     """Renderiza una plantilla añadiendo el contexto común de la aplicación."""
     from contaflow.database import SessionLocal
 
+    from contaflow.services import modo_presentacion
+
     datos: dict[str, Any] = {}
     db = SessionLocal()
     try:
@@ -90,6 +92,7 @@ def render(
             anio_activo=anio,
             mes_activo=mes,
             mensajes=consumir_mensajes(request),
+            modo_presentacion_activo=modo_presentacion.esta_activo(db),
         )
     finally:
         db.close()

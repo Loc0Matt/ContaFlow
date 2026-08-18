@@ -187,6 +187,12 @@ input[type=checkbox] { width: auto; }
 .btn.peligro:hover { background: #90201a; }
 .btn.acento { background: var(--acento); border-color: var(--acento); }
 .btn.acento:hover { background: #0b7c72; }
+.btn.presentacion.activo {
+  background: var(--warn-bg); color: var(--warn); border-color: #efe0b3;
+  animation: parpadeo-suave 2.2s ease-in-out infinite;
+}
+.btn.presentacion.activo:hover { background: #f7ecc9; color: var(--warn); }
+@keyframes parpadeo-suave { 0%, 100% { opacity: 1; } 50% { opacity: .72; } }
 
 /* ------------------------------------------------------------------ avisos */
 .aviso { padding: 10px 14px; border-radius: var(--radio); margin-bottom: 12px; font-size: 13px; border: 1px solid; }

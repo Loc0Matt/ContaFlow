@@ -15,14 +15,22 @@ from contaflow.routers import (
     activofijo, configuracion, contabilidad, empresas, general, informes, maestros, remuneraciones,
     tributario,
 )
+from contaflow.services import modo_presentacion
 from contaflow.services.contabilidad import ErrorContable
 from contaflow.services.seed import sembrar_globales
-from contaflow.web import SinEmpresa, render
+from contaflow.web import SinEmpresa, redirigir, render
 
 log = logging.getLogger("contaflow")
 
 #: Rutas accesibles sin sesión iniciada.
 RUTAS_PUBLICAS = {"/login", "/logout", "/salud", "/firma", "/logo"}
+
+#: POST que deben seguir funcionando aunque el modo presentación esté activo:
+#: son navegación (no modifican datos de negocio) o el propio interruptor
+#: — si este último se bloqueara a sí mismo, no habría forma de apagarlo.
+RUTAS_ESCRITURA_SIEMPRE_PERMITIDA = {
+    "/login", "/seleccionar-empresa", "/seleccionar-periodo", "/modo-presentacion/alternar",
+}
 
 
 def crear_app() -> FastAPI:
@@ -42,6 +50,22 @@ def crear_app() -> FastAPI:
             return await call_next(request)
         if not request.session.get("usuario_id"):
             return RedirectResponse("/login", status_code=303)
+
+        # Modo presentación: bloquea cualquier escritura, sin excepción salvo
+        # la lista de arriba. Se revisa acá (y no con un Depends por endpoint)
+        # justamente para no depender de acordarse de agregarlo en cada ruta
+        # nueva — el mismo descuido que causó el problema de los roles.
+        if request.method in ("POST", "PUT", "PATCH", "DELETE") and ruta not in RUTAS_ESCRITURA_SIEMPRE_PERMITIDA:
+            with SessionLocal() as db:
+                if modo_presentacion.esta_activo(db):
+                    destino = request.headers.get("referer", "/")
+                    return redirigir(
+                        destino, request,
+                        "El sistema está en modo presentación (solo lectura). "
+                        "Desactívalo en la barra superior para guardar cambios.",
+                        "error",
+                    )
+
         return await call_next(request)
 
     # Starlette ejecuta primero el último middleware agregado: la sesión debe

@@ -11,6 +11,7 @@ from contaflow.database import get_db
 from contaflow.models import (
     ClaseDocumento, Comprobante, Documento, Empresa, EstadoComprobante, Trabajador, Usuario,
 )
+from contaflow.services import modo_presentacion
 from contaflow.services.contabilidad import estado_resultados, saldos
 from contaflow.services.formularios import generar_f29
 from contaflow.services.seguridad import verificar_password
@@ -145,3 +146,15 @@ def seleccionar_periodo(
     request.session["mes"] = max(1, min(12, entero(mes, date.today().month)))
     destino = request.headers.get("referer", "/")
     return redirigir(destino)
+
+
+@router.post("/modo-presentacion/alternar")
+def alternar_modo_presentacion(request: Request, db: Session = Depends(get_db)):
+    activo = modo_presentacion.alternar(db)
+    texto = (
+        "Modo presentación activado: el sistema queda en solo lectura."
+        if activo else
+        "Modo presentación desactivado: ya puedes guardar cambios de nuevo."
+    )
+    destino = request.headers.get("referer", "/")
+    return redirigir(destino, request, texto, "warn" if activo else "ok")
