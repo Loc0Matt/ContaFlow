@@ -32,32 +32,53 @@ def dir_recursos() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
-def dir_datos_portable() -> Path | None:
-    """Carpeta `datos` junto al propio `.exe`, si existe.
-
-    Por defecto ContAll guarda todo en AppData/XDG — atado al computador,
-    no al ejecutable. Para que un `.exe` en un pendrive lleve sus datos
-    consigo entre computadores, basta con crear a mano una carpeta llamada
-    `datos` en la misma carpeta donde está `ContAll.exe`: si existe, se
-    usa esa en vez de AppData.
-
-    Es opt-in a propósito (la carpeta tiene que existir de antemano): así
-    una instalación ya en uso, con datos en AppData, nunca «pierde» sus
-    datos de golpe sólo por actualizar el ejecutable — seguiría sin
-    encontrar esa carpeta y usaría AppData exactamente como antes. Sólo
-    aplica al ejecutable congelado; en desarrollo (`python run.py`) no
-    tendría sentido.
-    """
-    if not es_ejecutable_congelado():
-        return None
-    carpeta = Path(sys.executable).resolve().parent / "datos"
-    return carpeta if carpeta.is_dir() else None
-
-
 def _carpeta_appdata(nombre: str) -> Path:
     if os.name == "nt":
         return Path(os.environ.get("LOCALAPPDATA", Path.home())) / nombre
     return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / nombre
+
+
+def _hay_datos_en_appdata() -> bool:
+    """True si ya existe una base de datos en AppData/XDG, con el nombre
+    actual o el anterior a la v1.1.0 — para no crearle de golpe una carpeta
+    portable vacía junto al `.exe` a quien ya tiene datos guardados ahí."""
+    return any(
+        (_carpeta_appdata(nombre) / "contaflow.db").is_file()
+        for nombre in (APP_NAME, _NOMBRE_ANTERIOR)
+    )
+
+
+def dir_datos_portable() -> Path | None:
+    """Carpeta `datos` junto al propio `.exe`.
+
+    En una instalación realmente nueva (nada guardado todavía en AppData,
+    ni con el nombre actual ni con el anterior) el propio `.exe` la crea
+    solo la primera vez que arranca — así el caso más común, «bajo el .exe
+    y lo uso», queda portable de fábrica sin ningún paso manual: basta con
+    copiar esa misma carpeta si se quiere mover a otro computador.
+
+    Sigue siendo opt-in para quien YA tiene datos en AppData (con el
+    nombre actual o el anterior a la v1.1.0): ahí no se crea nada acá y el
+    arranque sigue leyendo AppData exactamente como antes — nunca se
+    «pierden» datos ya guardados sólo por reemplazar el `.exe`. Esa
+    persona puede seguir activando el modo portable ella misma, creando
+    la carpeta `datos` a mano, como siempre.
+
+    Sólo aplica al ejecutable congelado; en desarrollo (`python run.py`)
+    no tendría sentido.
+    """
+    if not es_ejecutable_congelado():
+        return None
+    carpeta = Path(sys.executable).resolve().parent / "datos"
+    if carpeta.is_dir():
+        return carpeta
+    if _hay_datos_en_appdata():
+        return None
+    try:
+        carpeta.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return None  # sin permiso de escritura junto al .exe: sigue en AppData
+    return carpeta
 
 
 def dir_datos_legado() -> Path | None:
@@ -93,6 +114,9 @@ DIR_BASE = dir_recursos()
 DIR_DATOS = dir_datos()
 DIR_TEMPLATES = DIR_BASE / "contaflow" / "templates"
 DIR_STATIC = DIR_BASE / "contaflow" / "static"
+#: Manual de usuario en PDF, incrustado en el propio .exe (ver build/contaflow.spec)
+#: para que esté disponible sin depender de bajarlo aparte de las Releases.
+RUTA_MANUAL = DIR_BASE / "docs" / "Manual-ContAll.pdf"
 DIR_BACKUPS = DIR_DATOS / "respaldos"
 DIR_EXPORT = DIR_DATOS / "exportaciones"
 for _d in (DIR_BACKUPS, DIR_EXPORT):

@@ -19,13 +19,43 @@ class TestCarpetaPortable(unittest.TestCase):
         with mock.patch.object(cfg, "es_ejecutable_congelado", return_value=False):
             self.assertIsNone(cfg.dir_datos_portable())
 
-    def test_none_si_no_existe_la_carpeta_datos(self):
+    def test_crea_la_carpeta_datos_sola_en_instalacion_nueva(self):
+        """Instalación realmente nueva (nada en AppData todavía, ni con el
+        nombre actual ni con el anterior): el .exe crea `datos` solo, sin
+        que haya que hacerlo a mano."""
         with tempfile.TemporaryDirectory() as tmp:
             exe = Path(tmp) / "ContAll.exe"
             exe.touch()
             with mock.patch.object(cfg, "es_ejecutable_congelado", return_value=True):
                 with mock.patch.object(sys, "executable", str(exe)):
-                    self.assertIsNone(cfg.dir_datos_portable())
+                    with mock.patch.object(cfg, "_hay_datos_en_appdata", return_value=False):
+                        portable = cfg.dir_datos_portable()
+            self.assertEqual(portable, Path(tmp) / "datos")
+            self.assertTrue((Path(tmp) / "datos").is_dir())
+
+    def test_no_crea_la_carpeta_si_ya_hay_datos_en_appdata(self):
+        """Quien ya tiene datos guardados en AppData (nombre actual o el
+        anterior) no se lleva de sorpresa una carpeta portable vacía junto
+        al .exe: sigue en AppData, tal como antes de este cambio."""
+        with tempfile.TemporaryDirectory() as tmp:
+            exe = Path(tmp) / "ContAll.exe"
+            exe.touch()
+            with mock.patch.object(cfg, "es_ejecutable_congelado", return_value=True):
+                with mock.patch.object(sys, "executable", str(exe)):
+                    with mock.patch.object(cfg, "_hay_datos_en_appdata", return_value=True):
+                        portable = cfg.dir_datos_portable()
+            self.assertIsNone(portable)
+            self.assertFalse((Path(tmp) / "datos").exists())
+
+    def test_sin_permiso_de_escritura_junto_al_exe_no_revienta(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            exe = Path(tmp) / "ContAll.exe"
+            exe.touch()
+            with mock.patch.object(cfg, "es_ejecutable_congelado", return_value=True):
+                with mock.patch.object(sys, "executable", str(exe)):
+                    with mock.patch.object(cfg, "_hay_datos_en_appdata", return_value=False):
+                        with mock.patch.object(Path, "mkdir", side_effect=OSError("sin permiso")):
+                            self.assertIsNone(cfg.dir_datos_portable())
 
     def test_usa_la_carpeta_datos_si_existe_junto_al_exe(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -69,10 +99,11 @@ class TestCarpetaPortable(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             exe = Path(tmp) / "ContAll.exe"
             exe.touch()
-            # Sin carpeta "datos" creada.
+            # Sin carpeta "datos" creada, pero con datos reales en AppData.
             with mock.patch.object(cfg, "es_ejecutable_congelado", return_value=True):
                 with mock.patch.object(sys, "executable", str(exe)):
-                    self.assertIsNone(cfg.dir_datos_portable())
+                    with mock.patch.object(cfg, "_hay_datos_en_appdata", return_value=True):
+                        self.assertIsNone(cfg.dir_datos_portable())
 
 
 class TestNombreLegado(unittest.TestCase):
