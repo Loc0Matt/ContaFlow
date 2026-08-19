@@ -24,7 +24,13 @@ class TestCarpetaPortable(unittest.TestCase):
         nombre actual ni con el anterior): el .exe crea `datos` solo, sin
         que haya que hacerlo a mano."""
         with tempfile.TemporaryDirectory() as tmp:
-            exe = Path(tmp) / "ContAll.exe"
+            # .resolve(): en Windows, tempfile puede devolver la ruta con un
+            # nombre corto 8.3 (p.ej. RUNNER~1) — Path(sys.executable).resolve()
+            # en config.py la expande al nombre largo, así que sin esto la
+            # comparación de abajo falla aunque sea exactamente la misma
+            # carpeta física.
+            tmp = Path(tmp).resolve()
+            exe = tmp / "ContAll.exe"
             exe.touch()
             with mock.patch.object(cfg, "es_ejecutable_congelado", return_value=True):
                 with mock.patch.object(sys, "executable", str(exe)):
@@ -59,7 +65,8 @@ class TestCarpetaPortable(unittest.TestCase):
 
     def test_usa_la_carpeta_datos_si_existe_junto_al_exe(self):
         with tempfile.TemporaryDirectory() as tmp:
-            exe = Path(tmp) / "ContAll.exe"
+            tmp = Path(tmp).resolve()  # ver nota sobre nombres 8.3 más arriba
+            exe = tmp / "ContAll.exe"
             exe.touch()
             (Path(tmp) / "datos").mkdir()
             with mock.patch.object(cfg, "es_ejecutable_congelado", return_value=True):
@@ -81,7 +88,8 @@ class TestCarpetaPortable(unittest.TestCase):
 
     def test_dir_datos_usa_portable_cuando_existe_la_carpeta(self):
         with tempfile.TemporaryDirectory() as tmp:
-            exe = Path(tmp) / "ContAll.exe"
+            tmp = Path(tmp).resolve()  # ver nota sobre nombres 8.3 más arriba
+            exe = tmp / "ContAll.exe"
             exe.touch()
             (Path(tmp) / "datos").mkdir()
             with mock.patch.dict(os.environ, {}, clear=False):
