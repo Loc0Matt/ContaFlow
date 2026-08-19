@@ -17,6 +17,14 @@ datos = [
     (str(RAIZ / "contaflow" / "static"), "contaflow/static"),
 ]
 
+# El manual también viaja incrustado, así que /manual funciona con sólo abrir
+# el .exe, sin depender de que alguien lo baje aparte desde GitHub. Se genera
+# con herramientas/generar_manual.py antes de empaquetar (ver el workflow de
+# CI); si falta, no rompe el build — sólo /manual da 404.
+_manual = RAIZ / "docs" / "Manual-ContAll.pdf"
+if _manual.exists():
+    datos.append((str(_manual), "docs"))
+
 # Uvicorn y SQLAlchemy resuelven varios módulos en tiempo de ejecución,
 # así que PyInstaller no los detecta con el análisis estático.
 ocultos = [

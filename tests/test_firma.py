@@ -8,6 +8,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 os.environ.setdefault("CONTAFLOW_DATA", tempfile.mkdtemp(prefix="contaflow-firma-"))
 
@@ -179,6 +180,51 @@ class TestLogotipo(unittest.TestCase):
         self.assertEqual(respuesta.status_code, 200)
         self.assertTrue(respuesta.headers["content-type"].startswith("image/"))
         self.assertGreater(len(respuesta.content), 500)
+
+
+class TestManualIncrustado(unittest.TestCase):
+    """El manual de usuario viaja incrustado en el propio .exe (ver
+    build/contaflow.spec) para que /manual funcione con sólo abrir el
+    programa, sin depender de bajarlo aparte desde GitHub."""
+
+    def test_el_manual_esta_enlazado_en_el_menu(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ImportError:
+            self.skipTest("httpx no está instalado")
+
+        from contaflow.app import crear_app
+
+        html = TestClient(crear_app()).get("/login").text
+        # /manual es pública: no hace falta buscar el link tras iniciar sesión
+        # para confirmar que existe en algún lado del sistema.
+        self.assertIn("/manual", (RAIZ / "contaflow" / "templates" / "base.html").read_text())
+
+    def test_la_ruta_sirve_el_pdf_sin_necesidad_de_sesion(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ImportError:
+            self.skipTest("httpx no está instalado")
+
+        from contaflow.app import crear_app
+
+        respuesta = TestClient(crear_app()).get("/manual")
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.headers["content-type"], "application/pdf")
+        self.assertGreater(len(respuesta.content), 1000)
+
+    def test_da_404_en_vez_de_reventar_si_falta_el_pdf(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ImportError:
+            self.skipTest("httpx no está instalado")
+
+        import contaflow.app as app_module
+
+        with mock.patch.object(app_module, "RUTA_MANUAL", RAIZ / "no-existe.pdf"):
+            respuesta = TestClient(app_module.crear_app()).get("/manual")
+        self.assertEqual(respuesta.status_code, 404)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

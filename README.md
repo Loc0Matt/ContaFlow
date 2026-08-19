@@ -38,7 +38,10 @@ Cuando termine de descargar:
    **Más información → Ejecutar de todas formas**.
 
 El manual de usuario (48 páginas, con índice clickeable, explica cada apartado del
-sistema y las 145 cuentas del plan contable una por una) se descarga igual de simple:
+sistema y las 145 cuentas del plan contable una por una) **ya viaja dentro del propio
+`ContAll.exe`** — ábrelo desde *Manual de usuario* en el menú lateral del programa, sin
+descargar nada aparte. Si prefieres tenerlo suelto (para leerlo en otro dispositivo,
+por ejemplo), también se descarga solo:
 
 **[📖 Descargar el manual en PDF](https://github.com/Loc0Matt/ContaFlow/releases/latest/download/Manual-ContAll.pdf)**
 
@@ -139,33 +142,41 @@ funciona igual.
 
 ### Dónde quedan tus datos
 
-Todo se guarda en:
+Desde la v1.1.0, la primera vez que abres `ContAll.exe` se crea **solo, junto al
+ejecutable**, una carpeta llamada `datos`:
+
+```
+(la carpeta donde tengas ContAll.exe)\datos\contaflow.db
+```
+
+Ese único archivo contiene **todas** las empresas. Respáldalo desde
+*Configuración → Respaldos* o cópialo a mano. Como el `.exe` y su carpeta `datos`
+quedan siempre juntos, puedes mover ambos (por ejemplo a un pendrive) sin perder nada
+— ver [Modo portable](#modo-portable-llevar-los-datos-en-el-mismo-pendrive) más abajo.
+
+Si el `.exe` corre desde un lugar sin permiso de escritura (por ejemplo, un CD-ROM o
+una carpeta de sólo lectura), no puede crear `datos` ahí y usa en su lugar el AppData
+del computador:
 
 ```
 C:\Users\<tu usuario>\AppData\Local\ContAll\contaflow.db
 ```
 
-Ese único archivo contiene **todas** las empresas. Respáldalo desde
-*Configuración → Respaldos* o cópialo a mano. Si actualizas el `.exe`, los datos se
-conservan porque viven fuera del ejecutable.
-
-Si vienes de **ContaFlow** (nombre del programa hasta la v1.0.0), no necesitas mover
-nada a mano: mientras tus datos sigan en `...\AppData\Local\ContaFlow\`, ContAll los
-encuentra solo la primera vez que abres el `.exe` nuevo.
+Si vienes de **ContaFlow** (nombre del programa hasta la v1.0.0) con datos ya
+guardados en AppData, no necesitas mover nada a mano: ContAll los encuentra solos y
+sigue usando esa misma carpeta — no te crea una `datos` vacía por encima.
 
 ### Modo portable (llevar los datos en el mismo pendrive)
 
-Por defecto, los datos quedan en el AppData del computador donde corres el programa —
-no en el pendrive junto al `.exe`. Si conectas el pendrive en otro computador, ese otro
-equipo no tiene tus datos: arranca como si fuera la primera vez.
+Desde la v1.1.0 esto es automático para cualquier instalación nueva (ver arriba): el
+`.exe` y su carpeta `datos` quedan siempre en el mismo lugar, así que copiar ambos a
+un pendrive y abrirlo en otro computador ya trae tus empresas y comprobantes consigo.
 
-Para que los datos viajen con el ejecutable, crea a mano una carpeta llamada **`datos`**
-en la misma carpeta donde está `ContAll.exe` (por ejemplo, dentro del pendrive, junto
-al `.exe`). Si esa carpeta existe, ContAll la usa en vez de AppData — así el `.exe` y
-sus datos quedan juntos, y puedes moverlos entre computadores sin perder nada.
-
-Si ya vienes usando ContAll con datos en AppData, no necesitas hacer nada: mientras no
-crees esa carpeta `datos`, todo sigue exactamente igual que antes.
+Si ya venías usando una versión anterior con tus datos en AppData y quieres pasarte al
+modo portable, créala tú mismo: una carpeta llamada **`datos`** en la misma carpeta
+donde está `ContAll.exe`. En cuanto exista, ContAll la usa en vez de AppData — así el
+`.exe` y sus datos quedan juntos desde ese momento en adelante. Mientras no la crees,
+todo sigue exactamente igual que antes, en AppData.
 
 ### Actualizar ContAll
 
@@ -349,8 +360,14 @@ los commits y en la [página de Releases](https://github.com/Loc0Matt/ContaFlow/
 - **Seguridad de acceso**: cambio de contraseña obligatorio en el primer inicio de
   sesión, bloqueo temporal tras varios intentos fallidos y un mínimo de contraseña
   consistente en todo el sistema.
-- **Modo portable**: si se crea a mano una carpeta `datos` junto al `.exe`, los datos
-  viajan con él entre computadores (por ejemplo, en un pendrive).
+- **Modo portable de fábrica**: en una instalación nueva, el propio `.exe` crea solo
+  su carpeta `datos` al lado — los datos viajan con él entre computadores (por
+  ejemplo, en un pendrive) sin ningún paso manual.
+- **Liquidaciones de sueldo editables y eliminables**: se puede quitar una
+  liquidación calculada por error, y corregirla (recalculándola) ya no falla ni deja
+  el asiento de centralización desactualizado.
+- **Manual de usuario incrustado en el `.exe`**: se abre desde el menú lateral del
+  programa, sin depender de bajarlo aparte.
 - Corrección de condiciones de carrera al numerar comprobantes y folios de
   documentos, para que un choque dé un mensaje claro en vez de un error interno.
 - La clave de firma de las cookies de sesión ahora es aleatoria y persistida, en vez

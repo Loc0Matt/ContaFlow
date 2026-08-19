@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
-from contaflow.config import APP_TITULO, APP_VERSION, DIR_STATIC, SESSION_SECRET
+from contaflow.config import APP_TITULO, APP_VERSION, DIR_STATIC, RUTA_MANUAL, SESSION_SECRET
 from contaflow.database import SessionLocal, crear_esquema
 from contaflow.models import Usuario
 from contaflow.routers import (
@@ -24,7 +24,7 @@ from contaflow.web import SinEmpresa, redirigir, render
 log = logging.getLogger("contaflow")
 
 #: Rutas accesibles sin sesión iniciada.
-RUTAS_PUBLICAS = {"/login", "/logout", "/salud", "/firma", "/logo"}
+RUTAS_PUBLICAS = {"/login", "/logout", "/salud", "/firma", "/logo", "/manual"}
 
 #: POST que deben seguir funcionando aunque el modo presentación esté activo:
 #: son navegación (no modifican datos de negocio) o el propio interruptor
@@ -143,6 +143,21 @@ def crear_app() -> FastAPI:
             return Response(status_code=404)
         ruta, tipo = archivo
         return FileResponse(ruta, media_type=tipo,
+                            headers={"Cache-Control": "max-age=3600"})
+
+    @app.get("/manual", include_in_schema=False)
+    def manual():
+        """Manual de usuario en PDF, incrustado en el propio .exe.
+
+        Así queda disponible con sólo abrir el programa, sin depender de que
+        alguien lo baje aparte desde la página de Releases — pensado para
+        quien descarga el .exe fuera de GitHub (un pendrive, por ejemplo).
+        """
+        from fastapi.responses import FileResponse
+
+        if not RUTA_MANUAL.is_file():
+            return Response(status_code=404)
+        return FileResponse(RUTA_MANUAL, media_type="application/pdf",
                             headers={"Cache-Control": "max-age=3600"})
 
     @app.get("/firma", include_in_schema=False)
