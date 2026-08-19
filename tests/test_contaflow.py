@@ -777,6 +777,25 @@ class TestAplicacionWeb(unittest.TestCase):
                 respuesta = self.cliente.get(ruta)
                 self.assertEqual(respuesta.status_code, 200, f"{ruta} → {respuesta.status_code}")
 
+    def test_barra_lateral_es_desplegable_y_se_abre_sola(self):
+        """La barra lateral agrupa las secciones en <details> plegables —
+        para que el panel no sea una lista sin fin — y el grupo de la
+        página en la que se está se abre solo, sin que haya que buscarlo."""
+        import re
+
+        html = self.cliente.get("/remuneraciones/liquidaciones").text
+        self.assertIn('<details class="grupo"', html)  # sigue siendo plegable
+
+        abiertos = {
+            nombre for abierto, nombre in re.findall(
+                r'<details class="grupo"\s*(open)?\s*>\s*<summary>([^<]+)</summary>', html
+            )
+            if abierto
+        }
+        self.assertIn("Remuneraciones", abiertos)
+        self.assertNotIn("Tributario", abiertos)
+        self.assertNotIn("Maestros", abiertos)
+
     def test_flujo_completo_por_http(self):
         """Venta, boleta, compra y honorario registrados vía formulario web."""
         self.cliente.post("/seleccionar-periodo", data={"anio": 2025, "mes": 9},
