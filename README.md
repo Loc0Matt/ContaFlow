@@ -368,6 +368,8 @@ los commits y en la [página de Releases](https://github.com/Loc0Matt/ContaFlow/
   el asiento de centralización desactualizado.
 - **Manual de usuario incrustado en el `.exe`**: se abre desde el menú lateral del
   programa, sin depender de bajarlo aparte.
+- **Barra lateral desplegable**: las secciones se agrupan en desplegables que abren
+  solos donde estás navegando, en vez de una lista larga y fija de enlaces.
 - Corrección de condiciones de carrera al numerar comprobantes y folios de
   documentos, para que un choque dé un mensaje claro en vez de un error interno.
 - La clave de firma de las cookies de sesión ahora es aleatoria y persistida, en vez
