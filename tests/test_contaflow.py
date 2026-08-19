@@ -18,8 +18,8 @@ os.environ["CONTAFLOW_DB_URL"] = "sqlite:///" + str(
 
 from contaflow.database import SessionLocal, crear_esquema  # noqa: E402
 from contaflow.models import (  # noqa: E402
-    AFP, ActivoFijo, ClaseDocumento, Cuenta, Documento, Empresa, Indicador, RegimenTributario,
-    TipoCompra, TipoComprobante, TipoContrato, TipoSalud, Trabajador,
+    AFP, ActivoFijo, ClaseDocumento, Comprobante, Cuenta, Documento, Empresa, Indicador,
+    Liquidacion, RegimenTributario, TipoCompra, TipoComprobante, TipoContrato, TipoSalud, Trabajador,
 )
 from contaflow.services import activofijo as af  # noqa: E402
 from contaflow.services.contabilidad import (  # noqa: E402
@@ -31,8 +31,8 @@ from contaflow.services.documentos import (  # noqa: E402
 )
 from contaflow.services.formularios import generar_f22, generar_f29, guardar_f29  # noqa: E402
 from contaflow.services.remuneraciones import (  # noqa: E402
-    EntradaLiquidacion, calcular_liquidacion, centralizar_remuneraciones, guardar_liquidacion,
-    impuesto_unico,
+    EntradaLiquidacion, calcular_liquidacion, centralizar_remuneraciones, eliminar_liquidacion,
+    guardar_liquidacion, impuesto_unico,
 )
 from contaflow.services.seed import cuenta_parametro, sembrar_empresa, sembrar_globales  # noqa: E402
 from contaflow.services.utils import (  # noqa: E402
@@ -586,6 +586,62 @@ class TestRemuneraciones(BaseTest):
             calcular_liquidacion(self.db, trabajador, 2030, 1, EntradaLiquidacion())
         self.assertIn("indicadores", str(ctx.exception).lower())
 
+    def test_eliminar_liquidacion_no_centralizada(self):
+        self.indicadores(2025, 7)
+        trabajador = self._trabajador()
+        liq = guardar_liquidacion(
+            self.db, calcular_liquidacion(self.db, trabajador, 2025, 7, EntradaLiquidacion())
+        )
+        liq_id = liq.id
+        eliminar_liquidacion(self.db, liq)
+        self.assertIsNone(self.db.get(Liquidacion, liq_id))
+
+    def test_eliminar_liquidacion_centralizada_borra_el_asiento_del_mes(self):
+        """Al eliminar una liquidación ya centralizada, el comprobante del mes
+        (que suma a TODOS los trabajadores) queda desactualizado — se borra
+        entero en vez de dejarlo con totales que ya no cuadran."""
+        self.indicadores(2025, 7)
+        ana = self._trabajador(rut="18765432-1", nombres="Ana")
+        beto = self._trabajador(rut="9876543-3", nombres="Beto")
+        for trabajador in (ana, beto):
+            guardar_liquidacion(
+                self.db, calcular_liquidacion(self.db, trabajador, 2025, 7, EntradaLiquidacion())
+            )
+        comp = centralizar_remuneraciones(self.db, self.empresa.id, 2025, 7)
+        comp_id = comp.id
+
+        from sqlalchemy import select
+
+        liq_ana = self.db.scalar(select(Liquidacion).where(Liquidacion.trabajador_id == ana.id))
+        self.assertEqual(liq_ana.comprobante_id, comp_id)
+
+        eliminar_liquidacion(self.db, liq_ana)
+
+        self.assertIsNone(self.db.get(Comprobante, comp_id), "el comprobante del mes debía borrarse")
+        liq_beto = self.db.scalar(select(Liquidacion).where(Liquidacion.trabajador_id == beto.id))
+        self.assertIsNone(liq_beto.comprobante_id, "la otra liquidación del mes queda sin asiento")
+
+    def test_recalcular_una_liquidacion_centralizada_invalida_su_asiento(self):
+        """Corregir (no eliminar) una liquidación ya centralizada también
+        debe dejar sin efecto el comprobante viejo — sus totales quedarían
+        mal si se corrige el número pero el asiento sigue con el anterior."""
+        self.indicadores(2025, 7)
+        trabajador = self._trabajador()
+        guardar_liquidacion(
+            self.db, calcular_liquidacion(self.db, trabajador, 2025, 7, EntradaLiquidacion())
+        )
+        comp = centralizar_remuneraciones(self.db, self.empresa.id, 2025, 7)
+        comp_id = comp.id
+
+        corregida = guardar_liquidacion(
+            self.db,
+            calcular_liquidacion(
+                self.db, trabajador, 2025, 7, EntradaLiquidacion(bonos=50_000)
+            ),
+        )
+        self.assertIsNone(corregida.comprobante_id)
+        self.assertIsNone(self.db.get(Comprobante, comp_id))
+
 
 class TestActivoFijo(BaseTest):
     def _activo(self, **extra):
@@ -862,6 +918,49 @@ class TestAplicacionWeb(unittest.TestCase):
             self.assertEqual(len(todos), 1, "no debe haber quedado un segundo documento duplicado")
         finally:
             db.close()
+
+    def test_eliminar_liquidacion_por_http(self):
+        """El botón «Eliminar» de la lista de liquidaciones: se agregó tras
+        un caso real — una liquidación calculada con un dato equivocado no
+        se podía corregir ni quitar, y eso iba a chocar al cerrar el mes."""
+        self.cliente.post("/seleccionar-periodo", data={"anio": 2025, "mes": 11},
+                          follow_redirects=False)
+        self.cliente.post("/maestros/indicadores/guardar", data={
+            "anio": 2025, "uf_11": "39000", "utm_11": "68000", "imm_11": "529000",
+        }, follow_redirects=False)
+        self.cliente.post("/remuneraciones/trabajadores/guardar", data={
+            "rut": "16345678-8", "nombres": "Carla", "apellidos": "Soto",
+            "fecha_ingreso": "2024-01-01", "tipo_contrato": "INDEFINIDO",
+            "sueldo_base": "800000", "salud_tipo": "FONASA",
+        }, follow_redirects=False)
+
+        from sqlalchemy import select
+
+        from contaflow.database import SessionLocal
+
+        db = SessionLocal()
+        trabajador = db.scalar(select(Trabajador).where(Trabajador.rut == "16345678-8"))
+        trabajador_id = trabajador.id
+        db.close()
+
+        self.cliente.post("/remuneraciones/liquidaciones/calcular", data={
+            "trabajador_id": trabajador_id, "dias_trabajados": "30",
+        }, follow_redirects=False)
+
+        db = SessionLocal()
+        liq = db.scalar(select(Liquidacion).where(Liquidacion.trabajador_id == trabajador_id))
+        self.assertIsNotNone(liq, "la liquidación debía haberse calculado y guardado")
+        liq_id = liq.id
+        db.close()
+
+        respuesta = self.cliente.post(f"/remuneraciones/liquidaciones/{liq_id}/eliminar",
+                                      follow_redirects=True)
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertIn("eliminada", respuesta.text)
+
+        db = SessionLocal()
+        self.assertIsNone(db.get(Liquidacion, liq_id))
+        db.close()
 
     def test_exportaciones(self):
         rutas = [

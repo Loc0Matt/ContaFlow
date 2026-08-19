@@ -15,7 +15,7 @@ from contaflow.services.contabilidad import ErrorContable
 from contaflow.services.exportar import a_csv, a_excel, a_pdf
 from contaflow.services.remuneraciones import (
     EntradaLiquidacion, ErrorRemuneracion, calcular_liquidacion, centralizar_remuneraciones,
-    finiquito, guardar_liquidacion, libro_remuneraciones,
+    eliminar_liquidacion, finiquito, guardar_liquidacion, libro_remuneraciones,
 )
 from contaflow.services.utils import (
     formato_moneda, normalizar_rut, parse_fecha, periodo_etiqueta, pesos, rut_valido,
@@ -228,6 +228,22 @@ def ver_liquidacion(liquidacion_id: int, request: Request, db: Session = Depends
                         MIME["pdf"])
 
     return render(request, "remuneraciones/liquidacion_detalle.html", {"liq": liq})
+
+
+@router.post("/liquidaciones/{liquidacion_id}/eliminar")
+def eliminar(liquidacion_id: int, request: Request, db: Session = Depends(get_db)):
+    empresa = exigir_empresa(request, db)
+    liq = db.get(Liquidacion, liquidacion_id)
+    if liq is None or liq.empresa_id != empresa.id:
+        return redirigir("/remuneraciones/liquidaciones", request, "Liquidación no encontrada.", "error")
+
+    trabajador = liq.trabajador.nombre_completo
+    periodo, tenia_asiento = periodo_etiqueta(liq.anio, liq.mes), liq.comprobante_id is not None
+    eliminar_liquidacion(db, liq)
+    mensaje = f"Liquidación de {trabajador} ({periodo}) eliminada."
+    if tenia_asiento:
+        mensaje += " Su asiento de centralización también se eliminó — vuelve a centralizar si corresponde."
+    return redirigir("/remuneraciones/liquidaciones", request, mensaje)
 
 
 @router.get("/libro")

@@ -193,8 +193,18 @@ def guardar_liquidacion(db: Session, liquidacion: Liquidacion) -> Liquidacion:
         )
     )
     if existente:
+        if existente.comprobante_id is not None:
+            # Ya estaba centralizada: el asiento del mes se armó con estos
+            # números — al corregirlos, ese comprobante queda desactualizado.
+            # Se borra (agrupa a todos los trabajadores del mes) y hay que
+            # volver a pulsar «Centralizar» para regenerarlo con lo que queda.
+            eliminar_asiento_de(
+                db, existente.empresa_id, OrigenComprobante.REMUNERACION,
+                existente.anio * 100 + existente.mes,
+            )
+            existente.comprobante_id = None
         for campo in liquidacion.__table__.columns.keys():
-            if campo in ("id", "creado_en", "comprobante_id"):
+            if campo in ("id", "creado_en", "actualizado_en", "comprobante_id"):
                 continue
             setattr(existente, campo, getattr(liquidacion, campo))
         db.commit()
@@ -202,6 +212,24 @@ def guardar_liquidacion(db: Session, liquidacion: Liquidacion) -> Liquidacion:
     db.add(liquidacion)
     db.commit()
     return liquidacion
+
+
+def eliminar_liquidacion(db: Session, liquidacion: Liquidacion) -> None:
+    """Quita por completo una liquidación (a diferencia de recalcularla, que
+    sólo corrige sus números).
+
+    Si ya estaba centralizada, también borra el comprobante del mes: agrupa
+    a todos los trabajadores, así que sus totales dejarían de cuadrar con
+    las liquidaciones que quedan. Hay que volver a pulsar «Centralizar»
+    para regenerarlo con lo que queda.
+    """
+    if liquidacion.comprobante_id is not None:
+        eliminar_asiento_de(
+            db, liquidacion.empresa_id, OrigenComprobante.REMUNERACION,
+            liquidacion.anio * 100 + liquidacion.mes,
+        )
+    db.delete(liquidacion)
+    db.commit()
 
 
 def libro_remuneraciones(db: Session, empresa_id: int, anio: int, mes: int) -> list[Liquidacion]:
