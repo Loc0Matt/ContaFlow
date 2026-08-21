@@ -18,14 +18,34 @@ engine = create_engine(
 
 @event.listens_for(engine, "connect")
 def _configurar_sqlite(dbapi_connection, _record):  # pragma: no cover - infra
-    """Activa claves foráneas y modo WAL (mejor concurrencia lectura/escritura)."""
+    """Activa claves foráneas y modo WAL (mejor concurrencia lectura/escritura).
+
+    También apaga el manejo de transacciones propio del driver `sqlite3` de
+    Python (pysqlite): por un bug de larga data, no emite `BEGIN` antes de
+    un SELECT, así que en modo WAL una conexión del pool puede quedarse
+    leyendo una foto vieja de la base incluso después de que otra conexión
+    ya confirmó un cambio. Se ve como fallos intermitentes al releer algo
+    recién guardado — por ejemplo, iniciar sesión falla justo después de
+    cambiar la contraseña y funciona al reintentar. `_iniciar_transaccion`
+    de abajo hace que SQLAlchemy sea quien controla el BEGIN, como recomienda
+    su propia documentación para pysqlite.
+    """
     if not URL_BD.startswith("sqlite"):
         return
+    dbapi_connection.isolation_level = None
     cur = dbapi_connection.cursor()
     cur.execute("PRAGMA foreign_keys=ON")
     cur.execute("PRAGMA journal_mode=WAL")
     cur.execute("PRAGMA synchronous=NORMAL")
     cur.close()
+
+
+@event.listens_for(engine, "begin")
+def _iniciar_transaccion(conn):  # pragma: no cover - infra
+    """Emite el BEGIN que pysqlite ya no manda solo (ver comentario arriba)."""
+    if not URL_BD.startswith("sqlite"):
+        return
+    conn.exec_driver_sql("BEGIN")
 
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False, future=True)
