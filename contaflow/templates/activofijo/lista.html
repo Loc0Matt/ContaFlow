@@ -44,10 +44,10 @@
       <label for="f_acel" style="margin:0">Depreciación acelerada (vida útil ÷ 3, mínimo 12 meses)</label></div>
     <div class="campos">
       <div class="campo"><label>Cuenta del activo</label>
-        <select name="cuenta_activo_id" id="f_cta_activo"><option value="">Por defecto</option>
+        <select name="cuenta_activo_id" id="f_cta_activo" class="buscable" data-placeholder="Cuenta por defecto…"><option value="">Por defecto</option>
           {% for c in cuentas %}<option value="{{ c.id }}">{{ c.codigo }} · {{ c.nombre }}</option>{% endfor %}</select></div>
       <div class="campo"><label>Depreciación acumulada</label>
-        <select name="cuenta_depreciacion_id" id="f_cta_dep"><option value="">Por defecto</option>
+        <select name="cuenta_depreciacion_id" id="f_cta_dep" class="buscable" data-placeholder="Cuenta por defecto…"><option value="">Por defecto</option>
           {% for c in cuentas %}<option value="{{ c.id }}">{{ c.codigo }} · {{ c.nombre }}</option>{% endfor %}</select></div>
       <div class="campo"><label>Centro de costo</label>
         <select name="centro_costo_id"><option value="">—</option>

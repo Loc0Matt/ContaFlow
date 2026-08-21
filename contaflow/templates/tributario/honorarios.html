@@ -28,7 +28,7 @@
       <div class="campo"><label>Retención calculada</label><input id="retencion_calc" readonly></div>
       <div class="campo"><label>Líquido a pagar</label><input id="liquido_calc" readonly></div>
       <div class="campo"><label>Cuenta de gasto</label>
-        <select name="cuenta_gasto"><option value="">Honorarios profesionales (por defecto)</option>
+        <select name="cuenta_gasto" class="buscable" data-placeholder="Honorarios profesionales (por defecto)…"><option value="">Honorarios profesionales (por defecto)</option>
           {% for c in cuentas %}<option value="{{ c.id }}">{{ c.codigo }} · {{ c.nombre }}</option>{% endfor %}
         </select></div>
       <div class="campo" style="grid-column:span 2"><label>Glosa</label><input name="glosa"></div>

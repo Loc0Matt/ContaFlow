@@ -6,7 +6,7 @@
 
 <form class="filtros" method="get">
   <div class="campo" style="min-width:320px"><label>Cuenta bancaria</label>
-    <select name="cuenta_id" onchange="this.form.submit()">
+    <select name="cuenta_id" class="buscable" data-placeholder="Código o nombre de la cuenta…" onchange="this.form.submit()">
       {% for b in bancos %}<option value="{{ b.id }}" {% if cuenta and b.id == cuenta.id %}selected{% endif %}>{{ b.codigo }} · {{ b.nombre }}</option>{% endfor %}
     </select></div>
 </form>

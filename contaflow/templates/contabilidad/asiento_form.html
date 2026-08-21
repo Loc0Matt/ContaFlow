@@ -53,7 +53,7 @@
 </form>
 
 <template id="plantilla-cuentas">
-  <select><option value="">— Seleccionar cuenta —</option>
+  <select class="buscable" data-placeholder="Código o nombre de la cuenta…"><option value="">— Seleccionar cuenta —</option>
   {% for c in cuentas %}<option value="{{ c.id }}">{{ c.codigo }} · {{ c.nombre }}</option>{% endfor %}
   </select>
 </template>
@@ -113,6 +113,7 @@ function agregarLinea() {
 
   [tdCuenta, tdGlosa, tdEnt, tdCC, tdFolio, tdDebe, tdHaber, tdBorrar].forEach(td => fila.appendChild(td));
   cuerpo.appendChild(fila);
+  if (window.mejorarBuscables) window.mejorarBuscables(fila);
 
   fila.querySelectorAll('.monto').forEach(inp => {
     inp.addEventListener('input', () => {

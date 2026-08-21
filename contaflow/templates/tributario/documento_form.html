@@ -95,11 +95,11 @@
     <summary>Imputación contable (opcional — si se omite se usan las cuentas por defecto)</summary>
     <div class="campos">
       <div class="campo"><label>Contrapartida ({{ 'clientes / caja' if es_venta else 'proveedores / caja' }})</label>
-        <select name="cuenta_contrapartida"><option value="">Cuenta por defecto</option>
+        <select name="cuenta_contrapartida" class="buscable" data-placeholder="Cuenta por defecto…"><option value="">Cuenta por defecto</option>
           {% for c in cuentas %}<option value="{{ c.id }}">{{ c.codigo }} · {{ c.nombre }}</option>{% endfor %}
         </select></div>
       <div class="campo"><label>Cuenta de {{ 'ingreso' if es_venta else 'gasto / costo' }}</label>
-        <select name="cuenta_resultado"><option value="">Cuenta por defecto</option>
+        <select name="cuenta_resultado" class="buscable" data-placeholder="Cuenta por defecto…"><option value="">Cuenta por defecto</option>
           {% for c in cuentas %}<option value="{{ c.id }}">{{ c.codigo }} · {{ c.nombre }}</option>{% endfor %}
         </select></div>
       <div class="campo"><label>Centro de costo</label>
