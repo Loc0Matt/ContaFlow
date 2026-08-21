@@ -182,6 +182,25 @@ class TestLogotipo(unittest.TestCase):
         self.assertGreater(len(respuesta.content), 500)
 
 
+class TestVolverUsaHistorial(unittest.TestCase):
+    """El botón «Volver» de una pantalla de detalle no debe mandar siempre
+    al mismo listado fijo: si se entró desde otro lado (el Libro Mayor
+    filtrado por una cuenta, por ejemplo) eso hacía perder el filtro que
+    se tenía armado ahí, además de aterrizar en la sección equivocada."""
+
+    PLANTILLAS = (
+        "contabilidad/asiento_detalle.html",
+        "remuneraciones/liquidacion_detalle.html",
+        "activofijo/calendario.html",
+    )
+
+    def test_usa_history_back_en_vez_de_una_ruta_fija(self):
+        for nombre in self.PLANTILLAS:
+            with self.subTest(plantilla=nombre):
+                html = (RAIZ / "contaflow" / "templates" / nombre).read_text(encoding="utf-8")
+                self.assertIn('href="javascript:history.back()">Volver', html)
+
+
 class TestManualIncrustado(unittest.TestCase):
     """El manual de usuario viaja incrustado en el propio .exe (ver
     build/contaflow.spec) para que /manual funcione con sólo abrir el

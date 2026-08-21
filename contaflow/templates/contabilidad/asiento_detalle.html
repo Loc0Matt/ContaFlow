@@ -40,7 +40,7 @@
   <form method="post" action="/contabilidad/comprobantes/{{ registro.id }}/anular" onsubmit="return confirm('¿Anular el comprobante {{ registro.folio }}? Dejará de considerarse en los libros.')">
     <div class="campo"><label>Motivo</label><input name="motivo" placeholder="Motivo de la anulación"></div>
     <button class="btn peligro">Anular</button>
-    <a class="btn sec" href="/contabilidad/comprobantes">Volver</a>
+    <a class="btn sec" href="javascript:history.back()">Volver</a>
   </form>
 </div>
 {% endif %}
