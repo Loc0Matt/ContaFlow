@@ -308,7 +308,7 @@ corresponda.
 ```bash
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt httpx
-.venv/bin/python -m unittest discover -s tests -v   # 200+ pruebas
+.venv/bin/python -m unittest discover -s tests -v   # 205+ pruebas
 .venv/bin/python run.py                             # levanta la app
 ```
 
@@ -344,6 +344,23 @@ contaflow/
 
 Resumen de qué cambia en cada versión publicada. El detalle línea por línea está en
 los commits y en la [página de Releases](https://github.com/Loc0Matt/ContaFlow/releases).
+
+### 1.1.2 — Corrección de fondo: lecturas obsoletas tras guardar
+
+- **Corregido un fallo intermitente real** al releer algo recién guardado —
+  por ejemplo, iniciar sesión fallaba justo después de cambiar la contraseña
+  y funcionaba al reintentar. La causa: el driver `sqlite3` de Python no
+  manda `BEGIN` antes de un `SELECT` por un bug de larga data, y en modo WAL
+  eso podía dejar a una conexión del pool leyendo una foto vieja de la base
+  aunque otra conexión ya hubiera confirmado un cambio. Podía afectar a
+  cualquier pantalla que lee algo justo después de guardarlo, no sólo el
+  login. Encontrado probando el sistema con un flujo real de principio a fin.
+- **Aviso visual cuando el buscador de cuentas no encuentra nada**: si el
+  texto escrito no calzaba con ninguna cuenta, el campo quedaba con pinta de
+  estar listo — el monto podía estar lleno y los totales cuadrar — pero la
+  cuenta nunca quedaba seleccionada por debajo, y recién se sabía al guardar,
+  con un error que no decía cuál línea había fallado. Ahora el campo se
+  marca en rojo apenas el texto no coincide con ninguna opción.
 
 ### 1.1.1 — Descargas en la ventana nativa, y correcciones de uso diario
 

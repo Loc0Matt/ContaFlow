@@ -12,7 +12,7 @@ from pathlib import Path
 
 APP_NAME = "ContAll"
 APP_TITULO = "ContAll · Contabilidad para Todos"
-APP_VERSION = "1.1.1"
+APP_VERSION = "1.1.2"
 
 #: Nombre anterior del programa (hasta la v1.0.0). Se usa sólo para que
 #: quien ya lo tenía instalado no "pierda" sus datos al actualizar — ver
