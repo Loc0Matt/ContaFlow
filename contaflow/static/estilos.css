@@ -172,6 +172,11 @@ input, select, textarea {
 }
 input:focus, select:focus, textarea:focus { outline: 2px solid rgba(47, 85, 151, .25); border-color: var(--azul-claro); }
 input[type=checkbox] { width: auto; }
+/* Campo de búsqueda (buscable.js) cuyo texto no coincide con ninguna opción
+   de la lista — sin este aviso, el campo se ve "lleno" pero no hay nada
+   realmente seleccionado por debajo. */
+.buscable-sin-coincidencia { border-color: var(--error); background: var(--error-bg); }
+.buscable-sin-coincidencia:focus { outline-color: rgba(180, 35, 24, .25); }
 .campo { margin-bottom: 12px; }
 .campos { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
 .campos.c2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }

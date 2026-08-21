@@ -41,8 +41,17 @@
       if (coincidencia) {
         select.value = coincidencia.value;
         select.dispatchEvent(new Event("change", { bubbles: true }));
+        input.classList.remove("buscable-sin-coincidencia");
+        input.title = "";
       } else {
         select.value = "";
+        // Sin esto, un texto que no calza con ninguna opción (una tecla de
+        // más, un nombre parecido) deja el campo con pinta de estar listo
+        // — el monto puede estar lleno y los totales cuadrar — pero la
+        // cuenta nunca quedó seleccionada, y recién se entera al guardar,
+        // con un error del servidor que no dice cuál línea falló.
+        input.classList.toggle("buscable-sin-coincidencia", input.value.length > 0);
+        input.title = input.value.length > 0 ? "No coincide con ninguna opción de la lista." : "";
       }
     });
 
