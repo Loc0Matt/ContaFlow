@@ -308,7 +308,7 @@ corresponda.
 ```bash
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt httpx
-.venv/bin/python -m unittest discover -s tests -v   # 185+ pruebas
+.venv/bin/python -m unittest discover -s tests -v   # 200+ pruebas
 .venv/bin/python run.py                             # levanta la app
 ```
 
@@ -344,6 +344,24 @@ contaflow/
 
 Resumen de qué cambia en cada versión publicada. El detalle línea por línea está en
 los commits y en la [página de Releases](https://github.com/Loc0Matt/ContaFlow/releases).
+
+### 1.1.1 — Descargas en la ventana nativa, y correcciones de uso diario
+
+- **Exportar a Excel/PDF/CSV vuelve a funcionar** dentro de la ventana nativa del
+  `.exe`: WebView2 bloqueaba las descargas por seguridad, en silencio, sin ningún
+  aviso ni error. Los botones ya funcionaban bien en el navegador — el problema
+  era exclusivo de la ventana propia.
+- **Trabajadores: desactivar y eliminar** directo desde la lista, sin tener que
+  entrar a editar y buscar la casilla «Activo» dentro del formulario grande.
+  Eliminar sólo se permite si el trabajador nunca tuvo una liquidación calculada;
+  si ya tiene alguna, se ofrece desactivarlo en su lugar.
+- **Selector de cuentas con buscador**: en el Libro Mayor, comprobantes,
+  conciliación bancaria, análisis de cuentas y otros formularios, ahora se puede
+  escribir el código o el nombre para filtrar en vez de desplazarse por el plan
+  de cuentas completo.
+- **El botón «Volver»** de un comprobante, una liquidación o un calendario de
+  depreciación regresa a la pantalla exacta de la que se vino (con la cuenta y
+  el filtro que se tenían armados) en vez de mandar siempre al mismo listado fijo.
 
 ### 1.1.0 — Cambio de nombre a ContAll, sin roles y modo presentación
 
