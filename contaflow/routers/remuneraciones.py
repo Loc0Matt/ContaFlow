@@ -14,8 +14,9 @@ from contaflow.models import (
 from contaflow.services.contabilidad import ErrorContable
 from contaflow.services.exportar import a_csv, a_excel, a_pdf
 from contaflow.services.remuneraciones import (
-    EntradaLiquidacion, ErrorRemuneracion, calcular_liquidacion, centralizar_remuneraciones,
-    eliminar_liquidacion, finiquito, guardar_liquidacion, libro_remuneraciones,
+    EntradaLiquidacion, ErrorRemuneracion, alternar_trabajador, calcular_liquidacion,
+    centralizar_remuneraciones, eliminar_liquidacion, eliminar_trabajador, finiquito,
+    guardar_liquidacion, libro_remuneraciones,
 )
 from contaflow.services.utils import (
     formato_moneda, normalizar_rut, parse_fecha, periodo_etiqueta, pesos, rut_valido,
@@ -102,6 +103,32 @@ async def guardar_trabajador(request: Request, db: Session = Depends(get_db)):
     db.commit()
     return redirigir("/remuneraciones/trabajadores", request,
                      f"{trabajador.nombre_completo} guardado.")
+
+
+@router.post("/trabajadores/{trabajador_id}/alternar")
+def alternar(trabajador_id: int, request: Request, db: Session = Depends(get_db)):
+    empresa = exigir_empresa(request, db)
+    trabajador = db.get(Trabajador, trabajador_id)
+    if trabajador is None or trabajador.empresa_id != empresa.id:
+        return redirigir("/remuneraciones/trabajadores", request, "Trabajador no encontrado.", "error")
+    activo = alternar_trabajador(db, trabajador)
+    verbo = "activado" if activo else "desactivado"
+    return redirigir("/remuneraciones/trabajadores", request,
+                     f"{trabajador.nombre_completo} {verbo}.")
+
+
+@router.post("/trabajadores/{trabajador_id}/eliminar")
+def eliminar_trabajador_ruta(trabajador_id: int, request: Request, db: Session = Depends(get_db)):
+    empresa = exigir_empresa(request, db)
+    trabajador = db.get(Trabajador, trabajador_id)
+    if trabajador is None or trabajador.empresa_id != empresa.id:
+        return redirigir("/remuneraciones/trabajadores", request, "Trabajador no encontrado.", "error")
+    nombre = trabajador.nombre_completo
+    try:
+        eliminar_trabajador(db, trabajador)
+    except ErrorRemuneracion as exc:
+        return redirigir("/remuneraciones/trabajadores", request, str(exc), "error")
+    return redirigir("/remuneraciones/trabajadores", request, f"{nombre} eliminado.")
 
 
 # ---------------------------------------------------------------------------

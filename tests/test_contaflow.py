@@ -31,8 +31,8 @@ from contaflow.services.documentos import (  # noqa: E402
 )
 from contaflow.services.formularios import generar_f22, generar_f29, guardar_f29  # noqa: E402
 from contaflow.services.remuneraciones import (  # noqa: E402
-    EntradaLiquidacion, calcular_liquidacion, centralizar_remuneraciones, eliminar_liquidacion,
-    guardar_liquidacion, impuesto_unico,
+    EntradaLiquidacion, alternar_trabajador, calcular_liquidacion, centralizar_remuneraciones,
+    eliminar_liquidacion, eliminar_trabajador, guardar_liquidacion, impuesto_unico,
 )
 from contaflow.services.seed import cuenta_parametro, sembrar_empresa, sembrar_globales  # noqa: E402
 from contaflow.services.utils import (  # noqa: E402
@@ -642,6 +642,33 @@ class TestRemuneraciones(BaseTest):
         self.assertIsNone(corregida.comprobante_id)
         self.assertIsNone(self.db.get(Comprobante, comp_id))
 
+    def test_alternar_trabajador_cambia_el_estado(self):
+        trabajador = self._trabajador()
+        self.assertTrue(trabajador.activo)
+        self.assertFalse(alternar_trabajador(self.db, trabajador))
+        self.assertFalse(trabajador.activo)
+        self.assertTrue(alternar_trabajador(self.db, trabajador))
+        self.assertTrue(trabajador.activo)
+
+    def test_eliminar_trabajador_sin_liquidaciones(self):
+        trabajador = self._trabajador()
+        trabajador_id = trabajador.id
+        eliminar_trabajador(self.db, trabajador)
+        self.assertIsNone(self.db.get(Trabajador, trabajador_id))
+
+    def test_eliminar_trabajador_con_liquidaciones_se_rechaza(self):
+        """Borrarlo se llevaría la liquidación consigo (ondelete=CASCADE);
+        hay que desactivarlo en vez de eliminarlo."""
+        self.indicadores(2025, 7)
+        trabajador = self._trabajador()
+        guardar_liquidacion(
+            self.db, calcular_liquidacion(self.db, trabajador, 2025, 7, EntradaLiquidacion())
+        )
+        with self.assertRaises(Exception) as ctx:
+            eliminar_trabajador(self.db, trabajador)
+        self.assertIn("liquidaciones", str(ctx.exception).lower())
+        self.assertIsNotNone(self.db.get(Trabajador, trabajador.id))
+
 
 class TestActivoFijo(BaseTest):
     def _activo(self, **extra):
@@ -979,6 +1006,46 @@ class TestAplicacionWeb(unittest.TestCase):
 
         db = SessionLocal()
         self.assertIsNone(db.get(Liquidacion, liq_id))
+        db.close()
+
+    def test_desactivar_y_eliminar_trabajador_por_http(self):
+        """No había forma de desactivar o eliminar un trabajador salvo
+        entrar a editarlo y desmarcar «Activo» a mano, bien escondido en el
+        formulario grande — se agregaron botones directos en la tabla."""
+        self.cliente.post("/remuneraciones/trabajadores/guardar", data={
+            "rut": "20111222-2", "nombres": "Test", "apellidos": "Desactivar",
+            "fecha_ingreso": "2024-01-01", "tipo_contrato": "INDEFINIDO",
+            "sueldo_base": "700000", "salud_tipo": "FONASA",
+        }, follow_redirects=False)
+
+        from sqlalchemy import select
+
+        from contaflow.database import SessionLocal
+
+        db = SessionLocal()
+        trabajador = db.scalar(select(Trabajador).where(Trabajador.rut == "20111222-2"))
+        trabajador_id = trabajador.id
+        db.close()
+
+        r = self.cliente.post(f"/remuneraciones/trabajadores/{trabajador_id}/alternar",
+                              follow_redirects=True)
+        self.assertIn("desactivado", r.text)
+        db = SessionLocal()
+        self.assertFalse(db.get(Trabajador, trabajador_id).activo)
+        db.close()
+
+        # Un trabajador desactivado no aparece para calcular una liquidación nueva.
+        self.assertNotIn("Test Desactivar", self.cliente.get("/remuneraciones/liquidaciones").text)
+
+        r = self.cliente.post(f"/remuneraciones/trabajadores/{trabajador_id}/alternar",
+                              follow_redirects=True)
+        self.assertIn("activado", r.text)
+
+        r = self.cliente.post(f"/remuneraciones/trabajadores/{trabajador_id}/eliminar",
+                              follow_redirects=True)
+        self.assertIn("eliminado", r.text)
+        db = SessionLocal()
+        self.assertIsNone(db.get(Trabajador, trabajador_id))
         db.close()
 
     def test_exportaciones(self):

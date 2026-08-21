@@ -232,6 +232,40 @@ def eliminar_liquidacion(db: Session, liquidacion: Liquidacion) -> None:
     db.commit()
 
 
+def alternar_trabajador(db: Session, trabajador: Trabajador) -> bool:
+    """Activa o desactiva un trabajador. Devuelve el nuevo estado.
+
+    A diferencia de eliminarlo, esto no borra nada: sus liquidaciones y
+    finiquitos anteriores quedan intactos — sólo deja de aparecer entre los
+    trabajadores activos (no se le puede calcular una liquidación nueva, ni
+    aparece en «Calcular todos con datos base»).
+    """
+    trabajador.activo = not trabajador.activo
+    db.commit()
+    return trabajador.activo
+
+
+def eliminar_trabajador(db: Session, trabajador: Trabajador) -> None:
+    """Quita por completo un trabajador — sólo si nunca se le calculó una
+    liquidación.
+
+    Si ya tiene alguna, hay que desactivarlo en vez de eliminarlo: la
+    relación con Liquidacion es ondelete=CASCADE, así que borrarlo se
+    llevaría esas liquidaciones consigo y dejaría sin origen cualquier
+    comprobante que ya se haya centralizado con esos datos.
+    """
+    tiene_liquidaciones = db.scalar(
+        select(Liquidacion.id).where(Liquidacion.trabajador_id == trabajador.id).limit(1)
+    )
+    if tiene_liquidaciones:
+        raise ErrorRemuneracion(
+            f"{trabajador.nombre_completo} ya tiene liquidaciones calculadas: no se puede "
+            "eliminar sin perderlas. Desactívalo si ya no trabaja en la empresa."
+        )
+    db.delete(trabajador)
+    db.commit()
+
+
 def libro_remuneraciones(db: Session, empresa_id: int, anio: int, mes: int) -> list[Liquidacion]:
     from sqlalchemy.orm import joinedload
 

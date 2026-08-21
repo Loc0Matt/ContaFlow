@@ -82,6 +82,13 @@
           <td><span class="etiqueta-estado {{ 'e-ok' if t.activo else 'e-error' }}">{{ 'Activo' if t.activo else 'Inactivo' }}</span></td>
           <td class="num no-imprimir">
             <button class="btn sec mini" onclick='cargar({{ t.id }}, {{ t.rut | tojson }}, {{ t.nombres | tojson }}, {{ t.apellidos | tojson }}, {{ (t.cargo or "") | tojson }}, {{ t.fecha_ingreso.isoformat() | tojson }}, {{ t.tipo_contrato.value | tojson }}, {{ t.sueldo_base | float }}, {{ t.colacion | float }}, {{ t.movilizacion | float }}, {{ t.afp_id or "" | tojson }}, {{ t.salud_tipo.value | tojson }}, {{ t.isapre_plan_uf | float }}, {{ t.cargas_familiares }}, {{ t.asignacion_familiar_tramo | tojson }}, {{ t.gratificacion_legal | tojson }}, {{ t.afecto_afc | tojson }}, {{ t.jubilado | tojson }}, {{ t.activo | tojson }})'>Editar</button>
+            <form method="post" action="/remuneraciones/trabajadores/{{ t.id }}/alternar" style="display:inline">
+              <button class="btn sec mini">{{ 'Desactivar' if t.activo else 'Activar' }}</button>
+            </form>
+            <form method="post" action="/remuneraciones/trabajadores/{{ t.id }}/eliminar" style="display:inline"
+                  onsubmit="return confirm('¿Eliminar a {{ t.nombre_completo }}? Sólo se puede si nunca se le calculó una liquidación.')">
+              <button class="btn peligro mini">Eliminar</button>
+            </form>
           </td>
         </tr>
       {% else %}
