@@ -147,6 +147,18 @@ class TestVentanaDeControl(unittest.TestCase):
         with mock.patch.dict(sys.modules, {"webview": None}):
             self.assertFalse(run.ventana_nativa(mock.Mock(url="http://127.0.0.1:8777")))
 
+    def test_habilita_las_descargas_antes_de_abrir_la_ventana(self):
+        """WebView2 bloquea las descargas por defecto, en silencio (sin
+        error ni diálogo) — ALLOW_DOWNLOADS tiene que fijarse antes de
+        create_window(), o exportar a Excel/PDF/CSV no hace nada visible
+        dentro de la ventana nativa."""
+        falso_webview = mock.Mock()
+        falso_webview.settings = {}
+        with mock.patch.dict(sys.modules, {"webview": falso_webview}):
+            self.assertTrue(run.ventana_nativa(mock.Mock(url="http://127.0.0.1:8777")))
+        self.assertTrue(falso_webview.settings.get("ALLOW_DOWNLOADS"))
+        falso_webview.create_window.assert_called_once()
+
     def test_modo_aplicacion_sin_navegadores(self):
         with mock.patch("shutil.which", return_value=None):
             with mock.patch.object(run, "NAVEGADORES", ()):

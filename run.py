@@ -117,6 +117,12 @@ def ventana_nativa(servidor: Servidor) -> bool:
         print(f"Ventana nativa no disponible ({exc}).")
         return False
 
+    # Por seguridad, WebView2 bloquea las descargas de archivos si no se
+    # habilitan a propósito — sin esto, los botones de exportar a Excel/PDF/CSV
+    # no hacen nada visible (ni error, ni diálogo): la descarga se descarta en
+    # silencio. Tiene que fijarse antes de create_window().
+    webview.settings["ALLOW_DOWNLOADS"] = True
+
     try:
         webview.create_window(
             f"{APP_NAME} {APP_VERSION}",
